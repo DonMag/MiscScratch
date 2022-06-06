@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <device id="retina3_5" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="NZL-XN-nqK">
+                                <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                                <subviews>
+                                    <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="lid-RS-SJp" userLabel="Container View 1">
+                                        <rect key="frame" x="0.0" y="0.0" width="320" height="62"/>
+                                        <connections>
+                                            <segue destination="ZcI-WC-xqT" kind="embed" identifier="" id="k4y-Gb-8k0"/>
+                                        </connections>
+                                    </containerView>
+                                    <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="jqk-bL-PLU" userLabel="Container View 2">
+                                        <rect key="frame" x="0.0" y="62" width="320" height="46.5"/>
+                                        <connections>
+                                            <segue destination="PhF-BR-DiJ" kind="embed" identifier="" id="Cid-7b-X2E"/>
+                                        </connections>
+                                    </containerView>
+                                    <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dUd-aV-imG" userLabel="Container View 3">
+                                        <rect key="frame" x="0.0" y="108.5" width="320" height="124"/>
+                                        <connections>
+                                            <segue destination="e8k-dY-mQS" kind="embed" identifier="" id="wnM-5O-T2C"/>
+                                        </connections>
+                                    </containerView>
+                                    <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="rXa-Kv-HNY" userLabel="Container View 4">
+                                        <rect key="frame" x="0.0" y="232.5" width="320" height="123.5"/>
+                                        <connections>
+                                            <segue destination="8zD-xD-uWk" kind="embed" identifier="" id="N4I-ES-quf"/>
+                                        </connections>
+                                    </containerView>
+                                    <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="EzG-MP-sBb" userLabel="Container View 5">
+                                        <rect key="frame" x="0.0" y="356" width="320" height="124"/>
+                                        <connections>
+                                            <segue destination="VIF-z3-qSG" kind="embed" identifier="" id="8fS-sa-1GE"/>
+                                        </connections>
+                                    </containerView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstItem="jqk-bL-PLU" firstAttribute="height" secondItem="lid-RS-SJp" secondAttribute="height" multiplier="0.75" id="WOp-y4-ufu"/>
+                                    <constraint firstItem="rXa-Kv-HNY" firstAttribute="height" secondItem="lid-RS-SJp" secondAttribute="height" multiplier="2" id="ZsN-od-lex"/>
+                                    <constraint firstItem="dUd-aV-imG" firstAttribute="height" secondItem="lid-RS-SJp" secondAttribute="height" multiplier="2" id="a0R-Fp-k8Q"/>
+                                    <constraint firstItem="EzG-MP-sBb" firstAttribute="height" secondItem="lid-RS-SJp" secondAttribute="height" multiplier="2" id="taF-hg-AqB"/>
+                                </constraints>
+                            </stackView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstAttribute="trailing" secondItem="NZL-XN-nqK" secondAttribute="trailing" id="1ht-01-aeY"/>
+                            <constraint firstItem="NZL-XN-nqK" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="20d-EX-UcF"/>
+                            <constraint firstAttribute="bottom" secondItem="NZL-XN-nqK" secondAttribute="bottom" id="9Ab-kZ-Gyo"/>
+                            <constraint firstAttribute="top" secondItem="NZL-XN-nqK" secondAttribute="top" id="Ecf-u0-RGG"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="18.75" y="97.5"/>
+        </scene>
+        <!--Machine Status Bar New View Controller-->
+        <scene sceneID="Hw2-Qv-CSp">
+            <objects>
+                <viewController id="ZcI-WC-xqT" customClass="MachineStatusBarNewViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="mOd-Gg-OwU">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="62"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="BHE-PG-kMj" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="915" y="-329"/>
+        </scene>
+        <!--New Status Bar View Controller-->
+        <scene sceneID="4sb-zQ-cKk">
+            <objects>
+                <viewController id="PhF-BR-DiJ" customClass="NewStatusBarViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="MOH-z3-hjq">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="46.5"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="2Iw-if-8bu" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="915" y="-173"/>
+        </scene>
+        <!--iPad View With Table Main View Controller-->
+        <scene sceneID="Puk-yO-tUb">
+            <objects>
+                <viewController id="e8k-dY-mQS" customClass="IPadViewWithTableMainViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Upz-SW-3TF">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="124"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="QJz-Wx-jWz" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="915" y="18"/>
+        </scene>
+        <!--iPad View With Table Center Detail View Controller-->
+        <scene sceneID="loa-LK-lTo">
+            <objects>
+                <viewController id="8zD-xD-uWk" customClass="IPadViewWithTableCenterDetailViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="pTt-uE-avR">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="123.5"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ocO-S2-sWb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="915" y="248"/>
+        </scene>
+        <!--iPad View With Table Bottom Detail View Controller-->
+        <scene sceneID="VV6-K6-lq5">
+            <objects>
+                <viewController id="VIF-z3-qSG" customClass="IPadViewWithTableBottomDetailViewController" customModule="SummerStack" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="FYw-oq-fzN">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="124"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="IW3-Lo-KW6" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="915" y="470"/>
+        </scene>
+    </scenes>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
