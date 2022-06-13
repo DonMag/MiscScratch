@@ -387,3 +387,70 @@ class ManyLayersViewController: UIViewController, UIScrollViewDelegate {
 	}
 	
 }
+
+class TextFieldCell: UITableViewCell {
+	let tf = UITextField()
+	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+		super.init(style: style, reuseIdentifier: reuseIdentifier)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	func commonInit() {
+		tf.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(tf)
+		let g = contentView.layoutMarginsGuide
+		NSLayoutConstraint.activate([
+			tf.topAnchor.constraint(equalTo: g.topAnchor, constant: 4.0),
+			tf.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0.0),
+			tf.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0.0),
+			tf.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: -4.0),
+		])
+	}
+}
+class MyTableViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+	
+	let tableView = UITableView()
+	let blueView = UIView()
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		tableView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(tableView)
+		let g = view.safeAreaLayoutGuide
+		NSLayoutConstraint.activate([
+			tableView.topAnchor.constraint(equalTo: g.topAnchor, constant: 20.0),
+			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20.0),
+			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20.0),
+			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: -20.0),
+		])
+		tableView.dataSource = self
+		tableView.delegate = self
+		tableView.register(TextFieldCell.self, forCellReuseIdentifier: "c")
+		
+		tableView.keyboardDismissMode = .interactive
+	}
+	
+	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+		return 21
+	}
+	
+	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! TextFieldCell
+		
+		return c
+	}
+	
+	
+	
+	func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+		print("Begin Dragging")
+		
+	}
+
+
+}
+
+
