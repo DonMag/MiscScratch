@@ -1031,3 +1031,287 @@ class AddressBookTableViewController: UITableViewController {
 	 */
 	
 }
+
+
+class PieView: UIView {
+	
+	public var fillColor: UIColor = .red
+	public var strokeColor: UIColor = .black
+	
+	private let shapeLayer = CAShapeLayer()
+	private let shapeLayer2 = CAShapeLayer()
+
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		layer.addSublayer(shapeLayer)
+		layer.addSublayer(shapeLayer2)
+		shapeLayer.fillColor = UIColor.white.cgColor
+		shapeLayer.strokeColor = UIColor.systemOrange.cgColor
+		shapeLayer2.fillColor = UIColor.systemOrange.cgColor
+		shapeLayer2.strokeColor = UIColor.systemOrange.cgColor
+		
+		shapeLayer.lineWidth = 2
+		shapeLayer2.lineWidth = 2
+	}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+
+		var bez: UIBezierPath = UIBezierPath()
+		let ptC: CGPoint = CGPoint(x: bounds.midX, y: bounds.midY)
+		let a1: Double = -90.0 * .pi / 180.0
+		let a2: Double = 135.0 * .pi / 180.0
+		bez.move(to: ptC)
+		bez.addArc(withCenter: ptC, radius: bounds.midX, startAngle: a1, endAngle: a2, clockwise: true)
+		bez.close()
+
+		shapeLayer2.path = bez.cgPath
+		
+		bez = UIBezierPath()
+		bez.addArc(withCenter: ptC, radius: bounds.midX, startAngle: a2, endAngle: a1, clockwise: true)
+		shapeLayer.path = bez.cgPath
+	}
+	
+}
+
+class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
+	
+	//var myData:
+	
+	let tableView = UITableView()
+	var hs: [CGFloat] = [
+		100, 100, 160, 140, 100, 200, 120,
+	]
+
+	override func viewDidLoad() {
+		super.viewDidLoad()
+
+		let g = view.safeAreaLayoutGuide
+
+		tableView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(tableView)
+		
+		NSLayoutConstraint.activate([
+			tableView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
+			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
+			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
+			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
+		])
+		
+		tableView.register(PieLineCell.self, forCellReuseIdentifier: "c")
+		tableView.dataSource = self
+		tableView.delegate = self
+
+		var defInset = tableView.contentInset
+		defInset.top += 8
+		defInset.bottom += 8
+		tableView.contentInset = defInset
+
+		
+		return()
+
+		let xs: [CGFloat] = [
+			80, 240, 80, 340, 300, 280
+		]
+		let ys: [CGFloat] = [
+			80, 200, 360, 540, 720, 900
+		]
+		for (x, y) in zip(xs, ys) {
+			let p = PieView()
+			p.translatesAutoresizingMaskIntoConstraints = false
+			view.addSubview(p)
+			NSLayoutConstraint.activate([
+				p.topAnchor.constraint(equalTo: g.topAnchor, constant: y),
+				p.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: x),
+				p.widthAnchor.constraint(equalToConstant: 80.0),
+				p.heightAnchor.constraint(equalTo: p.widthAnchor),
+			])
+		}
+		
+	}
+	
+	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+		return 40
+	}
+	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! PieLineCell
+		c.lineDirection = indexPath.row % 2
+		c.h = hs[indexPath.row % hs.count]
+		return c
+	}
+}
+
+class PieLineCell: UITableViewCell {
+	
+	var lineDirection: Int = 0 {
+		didSet {
+			lConstraint.priority = lineDirection == 0 ? .defaultLow : .defaultHigh
+			rConstraint.priority = lineDirection == 0 ? .defaultHigh : .defaultLow
+			setNeedsLayout()
+			layoutIfNeeded()
+		}
+	}
+	var h: CGFloat = 120.0 {
+		didSet {
+			hConstraint.constant = h
+		}
+	}
+	
+	let pieView = PieView()
+	let lineLayer = CAShapeLayer()
+	var lConstraint: NSLayoutConstraint!
+	var rConstraint: NSLayoutConstraint!
+	var hConstraint: NSLayoutConstraint!
+	
+	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+		super.init(style: style, reuseIdentifier: reuseIdentifier)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		pieView.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(pieView)
+		
+		let hView = UIView()
+		hView.backgroundColor = .clear
+		hView.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(hView)
+		
+		let g = contentView //.layoutMarginsGuide
+		lConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
+		lConstraint.priority = .defaultLow
+		rConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -60.0)
+		rConstraint.priority = .defaultHigh
+		
+		hConstraint = hView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100)
+		hConstraint.priority = .required - 1
+		
+		NSLayoutConstraint.activate([
+			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			pieView.widthAnchor.constraint(equalToConstant: 60.0),
+			pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor),
+			
+//			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 20.0),
+//			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -20.0),
+			
+			lConstraint, rConstraint,
+			
+			hView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+			hView.topAnchor.constraint(equalTo: contentView.topAnchor),
+			hView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+			hView.widthAnchor.constraint(equalToConstant: 0.0),
+			
+			hConstraint,
+		])
+		
+		layer.addSublayer(lineLayer)
+		lineLayer.strokeColor = UIColor.blue.cgColor
+		lineLayer.lineWidth = 4
+		lineLayer.fillColor = UIColor.clear.cgColor
+		lineLayer.lineDashPattern = [20, 10]
+				
+		contentView.backgroundColor = .clear
+		self.backgroundColor = .clear
+		
+	}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+
+		let inset: CGFloat = 32.0
+		let radius: CGFloat = bounds.midY
+		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
+		ptC.x = lineDirection == 0 ? bounds.maxX - (inset + radius) : inset + radius
+		let a1: Double = -90.0 * .pi / 180.0
+		let a2: Double = 90.0 * .pi / 180.0
+		let xOff: CGFloat = lineDirection == 0 ? 0.0 : -0.0
+
+		let bez = UIBezierPath()
+		bez.move(to: CGPoint(x: bounds.midX + xOff, y: bounds.minY - 0.0))
+		bez.addLine(to: CGPoint(x: ptC.x, y: bounds.minY))
+		if lineDirection == 0 {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: true)
+		} else {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: false)
+		}
+		bez.addLine(to: CGPoint(x: bounds.midX + xOff, y: bounds.maxY))
+		lineLayer.path = bez.cgPath
+	}
+	
+}
+
+class TVTestVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		view.backgroundColor = .systemYellow
+		
+		let v = UIView()
+		v.backgroundColor = .cyan
+		
+		let t = UITextView()
+		t.text = "This is some text in the text view, so we can see it."
+		
+		v.translatesAutoresizingMaskIntoConstraints = false
+		t.translatesAutoresizingMaskIntoConstraints = false
+		
+		v.addSubview(t)
+		view.addSubview(v)
+
+		// minimum width for v
+		let m: CGFloat = 200.0
+		
+		// text view width
+		//	change this to see how v responds
+		let tW: CGFloat = 160.0
+		
+		// text view height
+		let tH: CGFloat = 128.0
+		
+		// respect safe area
+		let g = view.safeAreaLayoutGuide
+		
+		// we want v to get wider if t is wider than m
+		let vMatchW: NSLayoutConstraint = v.widthAnchor.constraint(equalTo: t.widthAnchor)
+
+		// but we give it less-than-required priority so it never gets narrower than m
+		vMatchW.priority = .defaultHigh
+		
+		NSLayoutConstraint.activate([
+			
+			// text view width and height
+			t.widthAnchor.constraint(equalToConstant: tW),
+			t.heightAnchor.constraint(equalToConstant: tH),
+			
+			// t Top/Bottom to v Top/Bottom (with 8-points "padding" so we can see it better
+			t.topAnchor.constraint(equalTo: v.topAnchor, constant: 8.0),
+			t.bottomAnchor.constraint(equalTo: v.bottomAnchor, constant: -8.0),
+			
+			// we want t centered horizontally in v if t is narrower than m
+			t.centerXAnchor.constraint(equalTo: v.centerXAnchor),
+			
+			// v is AT LEAST m width
+			v.widthAnchor.constraint(greaterThanOrEqualToConstant: m),
+			
+			// activate the lower-priority width constraint
+			vMatchW,
+			
+			// let's place v 40-points from the top
+			v.topAnchor.constraint(equalTo: g.topAnchor, constant: 40.0),
+			
+			// center v horizontally
+			v.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+			
+		])
+	}
+	
+}
