@@ -1147,12 +1147,9 @@ class DashedArcBKGView: UIView {
 	
 	public var layoutDirection: LayoutDirection = .left
 	public var yVals: [CGFloat] = []
+	public var yOff: CGFloat = 0.0
 	
-	private var shapeLayer: CAShapeLayer!
-	
-	override class var layerClass: AnyClass {
-		return CAShapeLayer.self
-	}
+	private var shapeLayer: CAShapeLayer = CAShapeLayer()
 	
 	override init(frame: CGRect) {
 		super.init(frame: frame)
@@ -1163,7 +1160,7 @@ class DashedArcBKGView: UIView {
 		commonInit()
 	}
 	private func commonInit() {
-		shapeLayer = self.layer as? CAShapeLayer
+		layer.addSublayer(shapeLayer)
 		shapeLayer.strokeColor = UIColor.red.cgColor
 		shapeLayer.lineWidth = 4
 		shapeLayer.fillColor = UIColor.clear.cgColor
@@ -1190,19 +1187,15 @@ class DashedArcBKGView: UIView {
 		let a1: Double = -90.0 * .pi / 180.0
 		let a2: Double = 90.0 * .pi / 180.0
 		let xOff: CGFloat = 0.0
-		var prevY: CGFloat = yVals[0]
+		var prevY: CGFloat = 0.0
 		
 		let bez = UIBezierPath()
-		bez.move(to: CGPoint(x: bounds.midX, y: yVals[0]))
-//		bez.addLine(to: CGPoint(x: bounds.midX, y: yVals[1]))
-//		shapeLayer.path = bez.cgPath
-//		return()
+		bez.move(to: CGPoint(x: bounds.midX, y: 0.0))
 
 		let iDir: Int = layoutDirection == .right ? 0 : 1
 		
-		for i in 1..<yVals.count {
-			let y = yVals[i]
-			let r: CGFloat = (y - prevY) * 0.5
+		for i in 0..<yVals.count {
+			let r = yVals[i] * 0.5
 			if i % 2 == iDir {
 				bez.addLine(to: CGPoint(x: bounds.maxX - (inset + r), y: prevY))
 				bez.addArc(withCenter: CGPoint(x: bounds.maxX - (inset + r), y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: true)
@@ -1210,11 +1203,15 @@ class DashedArcBKGView: UIView {
 				bez.addLine(to: CGPoint(x: bounds.minX + inset + r, y: prevY))
 				bez.addArc(withCenter: CGPoint(x: bounds.minX + inset + r, y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: false)
 			}
-			bez.addLine(to: CGPoint(x: bounds.midX, y: y))
-			prevY = y
+			prevY += yVals[i]
+			bez.addLine(to: CGPoint(x: bounds.midX, y: prevY))
 		}
 		
 		shapeLayer.path = bez.cgPath
+		CATransaction.begin()
+		CATransaction.setDisableActions(true)
+		shapeLayer.frame.origin.y = yOff
+		CATransaction.commit()
 	}
 }
 
@@ -1251,6 +1248,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		view.addSubview(tableView)
 		
 		bkgView.translatesAutoresizingMaskIntoConstraints = false
+		bkgView.layoutDirection = .right
 		tableView.backgroundView = bkgView
 		
 		NSLayoutConstraint.activate([
@@ -1292,21 +1290,24 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		c.fillData(myData[indexPath.row])
 		return c
 	}
+	
 	func scrollViewDidScroll(_ scrollView: UIScrollView) {
 		if let tv = scrollView as? UITableView {
 			if let a = tv.indexPathsForVisibleRows {
-				var yVals: [CGFloat] = []
+				var yVals: [CGFloat] = bkgView.yVals
 				a.forEach { pth in
 					if let c = tv.cellForRow(at: pth) {
 						let f = c.frame
-						yVals.append(f.origin.y - tv.contentOffset.y)
-						if pth == a.last {
-							yVals.append(f.origin.y - tv.contentOffset.y + f.size.height)
+						if pth.row > yVals.count - 1 {
+							yVals.append(0.0)
 						}
+						yVals[pth.row] = f.size.height
+//						if pth == a.last {
+//							yVals.append(f.origin.y - tv.contentOffset.y + f.size.height)
+//						}
 					}
 				}
-				let row = a.first?.row ?? 0
-				bkgView.layoutDirection = row % 2 == 0 ? .left : .right
+				bkgView.yOff = -scrollView.contentOffset.y
 				bkgView.yVals = yVals
 				bkgView.setNeedsLayout()
 			}
@@ -1431,14 +1432,14 @@ class PieLineCell: UITableViewCell {
 
 			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
 			pieView.widthAnchor.constraint(equalToConstant: 60.0),
-			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 8.0),
-			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -8.0),
+			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
 			
 			pieHeightConstraint, pieHorizontalConstraint,
 			
 			stack.centerYAnchor.constraint(equalTo: g.centerYAnchor),
-			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 8.0),
-			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -8.0),
+			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
 
 		])
 		
