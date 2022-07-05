@@ -1080,95 +1080,320 @@ class PieView: UIView {
 	
 }
 
+enum LayoutDirection: Int {
+	case left, right
+}
+struct MyDataStruct {
+	var first: String = ""
+	var second: String = ""
+	var third: String = ""
+	var direction: LayoutDirection = .left
+}
+
+class DashedArcView: UIView {
+	
+	public var layoutDirection: LayoutDirection = .left {
+		didSet {
+			setNeedsLayout()
+		}
+	}
+	
+	private var shapeLayer: CAShapeLayer!
+	
+	override class var layerClass: AnyClass {
+		return CAShapeLayer.self
+	}
+
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		shapeLayer = self.layer as? CAShapeLayer
+		shapeLayer.strokeColor = UIColor.blue.cgColor
+		shapeLayer.lineWidth = 4
+		shapeLayer.fillColor = UIColor.clear.cgColor
+		shapeLayer.lineDashPattern = [20, 10]
+	}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let inset: CGFloat = 32.0
+		let radius: CGFloat = bounds.midY
+		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
+		ptC.x = layoutDirection == .right ? bounds.maxX - (inset + radius) : inset + radius
+		let a1: Double = -90.0 * .pi / 180.0
+		let a2: Double = 90.0 * .pi / 180.0
+		let xOff: CGFloat = 0.0
+		
+		let bez = UIBezierPath()
+		bez.move(to: CGPoint(x: bounds.midX + xOff, y: bounds.minY - 0.0))
+		bez.addLine(to: CGPoint(x: ptC.x, y: bounds.minY))
+		if layoutDirection == .right {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: true)
+		} else {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: false)
+		}
+		bez.addLine(to: CGPoint(x: bounds.midX + xOff, y: bounds.maxY))
+		shapeLayer.path = bez.cgPath
+	}
+}
+
+class DashedArcBKGView: UIView {
+	
+	public var layoutDirection: LayoutDirection = .left
+	public var yVals: [CGFloat] = []
+	
+	private var shapeLayer: CAShapeLayer!
+	
+	override class var layerClass: AnyClass {
+		return CAShapeLayer.self
+	}
+	
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		shapeLayer = self.layer as? CAShapeLayer
+		shapeLayer.strokeColor = UIColor.red.cgColor
+		shapeLayer.lineWidth = 4
+		shapeLayer.fillColor = UIColor.clear.cgColor
+		shapeLayer.lineDashPattern = [20, 10]
+	}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		guard yVals.count > 0 else { return }
+		
+		let inset: CGFloat = 32.0
+		let radius: CGFloat = bounds.midY
+		
+		var ptLeftC: CGPoint = .zero
+		var ptRightC: CGPoint = .zero
+
+		ptLeftC.x = inset + radius
+		ptRightC.x = bounds.maxX - (inset + radius)
+		
+		
+		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
+		ptC.x = layoutDirection == .right ? bounds.maxX - (inset + radius) : inset + radius
+		
+		let a1: Double = -90.0 * .pi / 180.0
+		let a2: Double = 90.0 * .pi / 180.0
+		let xOff: CGFloat = 0.0
+		var prevY: CGFloat = yVals[0]
+		
+		let bez = UIBezierPath()
+		bez.move(to: CGPoint(x: bounds.midX, y: yVals[0]))
+//		bez.addLine(to: CGPoint(x: bounds.midX, y: yVals[1]))
+//		shapeLayer.path = bez.cgPath
+//		return()
+
+		let iDir: Int = layoutDirection == .right ? 0 : 1
+		
+		for i in 1..<yVals.count {
+			let y = yVals[i]
+			let r: CGFloat = (y - prevY) * 0.5
+			if i % 2 == iDir {
+				bez.addLine(to: CGPoint(x: bounds.maxX - (inset + r), y: prevY))
+				bez.addArc(withCenter: CGPoint(x: bounds.maxX - (inset + r), y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: true)
+			} else {
+				bez.addLine(to: CGPoint(x: bounds.minX + inset + r, y: prevY))
+				bez.addArc(withCenter: CGPoint(x: bounds.minX + inset + r, y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: false)
+			}
+			bez.addLine(to: CGPoint(x: bounds.midX, y: y))
+			prevY = y
+		}
+		
+		shapeLayer.path = bez.cgPath
+	}
+}
+
 class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	
-	//var myData:
+	var myData: [MyDataStruct] = []
 	
 	let tableView = UITableView()
 	var hs: [CGFloat] = [
 		100, 100, 160, 140, 100, 200, 120,
 	]
+	
+	let bkgView = DashedArcBKGView()
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
 
+		// generate some sample data
+		for i in 0..<30 {
+			var str: MyDataStruct = MyDataStruct()
+			str.first = "Level \(i)"
+			str.second = "Foundation \(i)"
+			str.third = "Row \(i) some text"
+			if i % 3 == 0 {
+				str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD"
+			}
+			str.direction = i % 2 == 0 ? .right : .left
+			myData.append(str)
+		}
+		
 		let g = view.safeAreaLayoutGuide
 
 		tableView.translatesAutoresizingMaskIntoConstraints = false
 		view.addSubview(tableView)
+		
+		bkgView.translatesAutoresizingMaskIntoConstraints = false
+		tableView.backgroundView = bkgView
 		
 		NSLayoutConstraint.activate([
 			tableView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
 			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
 			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
 			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
+
+			bkgView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
+			bkgView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
+			bkgView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
+			bkgView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
 		])
 		
 		tableView.register(PieLineCell.self, forCellReuseIdentifier: "c")
 		tableView.dataSource = self
 		tableView.delegate = self
+		tableView.separatorStyle = .none
 
-		var defInset = tableView.contentInset
-		defInset.top += 8
-		defInset.bottom += 8
-		tableView.contentInset = defInset
-
-		
-		return()
-
-		let xs: [CGFloat] = [
-			80, 240, 80, 340, 300, 280
-		]
-		let ys: [CGFloat] = [
-			80, 200, 360, 540, 720, 900
-		]
-		for (x, y) in zip(xs, ys) {
-			let p = PieView()
-			p.translatesAutoresizingMaskIntoConstraints = false
-			view.addSubview(p)
-			NSLayoutConstraint.activate([
-				p.topAnchor.constraint(equalTo: g.topAnchor, constant: y),
-				p.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: x),
-				p.widthAnchor.constraint(equalToConstant: 80.0),
-				p.heightAnchor.constraint(equalTo: p.widthAnchor),
-			])
-		}
-		
+		// because the dashed line will extend above the top of the first cell
+		// 	and below the bottom of the last cell
+		// we want to add a little "inset padding" on top and bottom of the table view
+		var defaultInset = tableView.contentInset
+		defaultInset.top += 8
+		defaultInset.bottom += 8
+		tableView.contentInset = defaultInset
 	}
-	
+	override func viewDidAppear(_ animated: Bool) {
+		super.viewDidAppear(animated)
+		scrollViewDidScroll(tableView)
+		// adjust the table view to show the very top dashed line
+		tableView.contentOffset.y = -8
+	}
 	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-		return 40
+		return myData.count
 	}
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! PieLineCell
-		c.lineDirection = indexPath.row % 2
-		c.h = hs[indexPath.row % hs.count]
+		c.fillData(myData[indexPath.row])
 		return c
+	}
+	func scrollViewDidScroll(_ scrollView: UIScrollView) {
+		if let tv = scrollView as? UITableView {
+			if let a = tv.indexPathsForVisibleRows {
+				var yVals: [CGFloat] = []
+				a.forEach { pth in
+					if let c = tv.cellForRow(at: pth) {
+						let f = c.frame
+						yVals.append(f.origin.y - tv.contentOffset.y)
+						if pth == a.last {
+							yVals.append(f.origin.y - tv.contentOffset.y + f.size.height)
+						}
+					}
+				}
+				let row = a.first?.row ?? 0
+				bkgView.layoutDirection = row % 2 == 0 ? .left : .right
+				bkgView.yVals = yVals
+				bkgView.setNeedsLayout()
+			}
+		}
 	}
 }
 
 class PieLineCell: UITableViewCell {
 	
-	var lineDirection: Int = 0 {
+	var layoutDirection: LayoutDirection = .left {
 		didSet {
-			lConstraint.priority = lineDirection == 0 ? .defaultLow : .defaultHigh
-			rConstraint.priority = lineDirection == 0 ? .defaultHigh : .defaultLow
-			setNeedsLayout()
-			layoutIfNeeded()
-		}
-	}
-	var h: CGFloat = 120.0 {
-		didSet {
-			hConstraint.constant = h
+			let g = contentView
+
+			pieHorizontalConstraint.isActive = false
+			stackLeadingConstraint.isActive = false
+			stackTrailingConstraint.isActive = false
+
+			if layoutDirection == .left {
+				// pie is on the left
+				pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .left
+				}
+			} else {
+				// pie is on the right
+				pieHorizontalConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .right
+				}
+			}
+
+			pieHorizontalConstraint.isActive = true
+			stackLeadingConstraint.isActive = true
+			stackTrailingConstraint.isActive = true
+
+			dashedArcView.layoutDirection = layoutDirection
 		}
 	}
 	
-	let pieView = PieView()
-	let lineLayer = CAShapeLayer()
-	var lConstraint: NSLayoutConstraint!
-	var rConstraint: NSLayoutConstraint!
-	var hConstraint: NSLayoutConstraint!
+	func fillData(_ str: MyDataStruct) {
+		firstLabel.text = str.first
+		secondLabel.text = str.second
+		thirdLabel.text = str.third
+		layoutDirection = str.direction
+	}
 	
+	private let dashedArcView = DashedArcView()
+	
+	private let pieView = PieView()
+	
+	private let firstLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 10.0, weight: .regular)
+		v.text = "Level 1"
+		return v
+	}()
+	private let secondLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 12.0, weight: .bold)
+		v.text = "Foundation"
+		return v
+	}()
+	private let thirdLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 10.0, weight: .regular)
+		v.text = "Reshape your lifestyles"
+		v.numberOfLines = 0
+		return v
+	}()
+	
+	// stack view for the labels
+	private let stack: UIStackView = {
+		let v = UIStackView()
+		v.axis = .vertical
+		v.spacing = 2
+		return v
+	}()
+
+	private var pieHorizontalConstraint: NSLayoutConstraint!
+	private var pieTrailingConstraint: NSLayoutConstraint!
+	private var stackLeadingConstraint: NSLayoutConstraint!
+	private var stackTrailingConstraint: NSLayoutConstraint!
+
 	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
 		super.init(style: style, reuseIdentifier: reuseIdentifier)
 		commonInit()
@@ -1178,72 +1403,49 @@ class PieLineCell: UITableViewCell {
 		commonInit()
 	}
 	private func commonInit() {
-		pieView.translatesAutoresizingMaskIntoConstraints = false
-		contentView.addSubview(pieView)
 		
-		let hView = UIView()
-		hView.backgroundColor = .clear
-		hView.translatesAutoresizingMaskIntoConstraints = false
-		contentView.addSubview(hView)
+		[firstLabel, secondLabel, thirdLabel].forEach { v in
+			stack.addArrangedSubview(v)
+		}
+		[dashedArcView, pieView, stack].forEach { v in
+			v.translatesAutoresizingMaskIntoConstraints = false
+			contentView.addSubview(v)
+		}
 		
-		let g = contentView //.layoutMarginsGuide
-		lConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
-		lConstraint.priority = .defaultLow
-		rConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -60.0)
-		rConstraint.priority = .defaultHigh
+		let g = contentView
 		
-		hConstraint = hView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100)
-		hConstraint.priority = .required - 1
+		pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
+		stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+		stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+		
+		// avoid auto-layout complaints
+		let pieHeightConstraint = pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor)
+		pieHeightConstraint.priority = .required - 1
 		
 		NSLayoutConstraint.activate([
+			
+			dashedArcView.topAnchor.constraint(equalTo: g.topAnchor),
+			dashedArcView.leadingAnchor.constraint(equalTo: g.leadingAnchor),
+			dashedArcView.trailingAnchor.constraint(equalTo: g.trailingAnchor),
+			dashedArcView.bottomAnchor.constraint(equalTo: g.bottomAnchor),
+
 			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
 			pieView.widthAnchor.constraint(equalToConstant: 60.0),
-			pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor),
+			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 8.0),
+			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -8.0),
 			
-//			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 20.0),
-//			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -20.0),
+			pieHeightConstraint, pieHorizontalConstraint,
 			
-			lConstraint, rConstraint,
-			
-			hView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-			hView.topAnchor.constraint(equalTo: contentView.topAnchor),
-			hView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-			hView.widthAnchor.constraint(equalToConstant: 0.0),
-			
-			hConstraint,
+			stack.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 8.0),
+			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -8.0),
+
 		])
 		
-		layer.addSublayer(lineLayer)
-		lineLayer.strokeColor = UIColor.blue.cgColor
-		lineLayer.lineWidth = 4
-		lineLayer.fillColor = UIColor.clear.cgColor
-		lineLayer.lineDashPattern = [20, 10]
-				
 		contentView.backgroundColor = .clear
 		self.backgroundColor = .clear
-		
-	}
-	override func layoutSubviews() {
-		super.layoutSubviews()
-
-		let inset: CGFloat = 32.0
-		let radius: CGFloat = bounds.midY
-		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
-		ptC.x = lineDirection == 0 ? bounds.maxX - (inset + radius) : inset + radius
-		let a1: Double = -90.0 * .pi / 180.0
-		let a2: Double = 90.0 * .pi / 180.0
-		let xOff: CGFloat = lineDirection == 0 ? 0.0 : -0.0
-
-		let bez = UIBezierPath()
-		bez.move(to: CGPoint(x: bounds.midX + xOff, y: bounds.minY - 0.0))
-		bez.addLine(to: CGPoint(x: ptC.x, y: bounds.minY))
-		if lineDirection == 0 {
-			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: true)
-		} else {
-			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: false)
-		}
-		bez.addLine(to: CGPoint(x: bounds.midX + xOff, y: bounds.maxY))
-		lineLayer.path = bez.cgPath
+	
+		dashedArcView.isHidden = true
 	}
 	
 }
@@ -1312,6 +1514,386 @@ class TVTestVC: UIViewController {
 			v.centerXAnchor.constraint(equalTo: g.centerXAnchor),
 			
 		])
+	}
+	
+}
+
+class ScriptEditingView: UITextView, UITextViewDelegate {
+}
+
+class StrTestVC: UIViewController, UITextViewDelegate {
+	
+	var textView: ScriptEditingView!
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		textView = ScriptEditingView(frame: .zero, textContainer: nil)
+		textView.backgroundColor = .black
+		textView.delegate = self
+		view.addSubview(textView)
+		textView.allowsEditingTextAttributes = true
+		
+		let guide = view.safeAreaLayoutGuide
+		
+		textView.translatesAutoresizingMaskIntoConstraints = false
+		NSLayoutConstraint.activate([
+			textView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+			textView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
+			textView.topAnchor.constraint(equalTo: view.topAnchor),
+			textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+		])
+		
+		let attributedString = sampleAttrString()
+
+		textView.attributedText = attributedString
+		
+		NSLog("Attributed now")
+		dumpAttributesOfText()
+		
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+			NSLog("Attributes after 1 sec")
+			self.dumpAttributesOfText()
+		}
+	}
+
+	private func dumpAttributesOfText() {
+		textView.attributedText?.enumerateAttributes(in: NSRange(location: 0, length: textView.attributedText!.length), options: .longestEffectiveRangeNotRequired, using: { dictionary, range, stop in
+			NSLog(" range \(range)")
+			
+			if let font = dictionary[.font] as? UIFont {
+				NSLog("Font at range \(range) - \(font.fontName), \(font.pointSize)")
+			}
+			
+			if let foregroundColor = dictionary[.foregroundColor] as? UIColor {
+				NSLog("Foregroundcolor \(foregroundColor) at range \(range)")
+			}
+			
+			if let underline = dictionary[.underlineStyle] as? Int {
+				NSLog("Underline \(underline) at range \(range)")
+			}
+		})
+	}
+	
+	func sampleAttrString() -> NSMutableAttributedString {
+		guard let theFont: UIFont = UIFont(name: "HelveticaNeue", size: 30.0) else {
+			fatalError()
+		}
+		
+		let attsA: [NSAttributedString.Key : Any] = [
+			.font: theFont,
+			.foregroundColor: UIColor.white,
+		]
+		
+		let gRGB = CGColorSpace(name: CGColorSpace.genericRGBLinear)!
+		let theCGColor = CGColor(colorSpace: gRGB, components: [0.96863, 0.80784, 0.27451, 1])!
+		let theColor = UIColor(cgColor: theCGColor)
+
+		let attsB: [NSAttributedString.Key : Any] = [
+			.font: theFont,
+			.foregroundColor: theColor,
+		]
+		
+		let partOne = NSMutableAttributedString(string: "1234567890123 ", attributes: attsA)
+		let partTwo = NSAttributedString(string: "String", attributes: attsB)
+		
+		partOne.append(partTwo)
+		
+		return partOne
+	}
+
+}
+
+class WrapTestVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		let stackView = UIStackView()
+		stackView.axis = .vertical
+		stackView.spacing = 4
+		stackView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(stackView)
+
+		let g = view.safeAreaLayoutGuide
+		NSLayoutConstraint.activate([
+			stackView.topAnchor.constraint(equalTo: g.topAnchor, constant: 20.0),
+			stackView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20.0),
+			stackView.widthAnchor.constraint(equalToConstant: 320.0),
+		])
+		
+		var noteLabel: UILabel!
+		var testLabel: UILabel!
+	
+		let noteFont: UIFont = .systemFont(ofSize: 14.0)
+		
+		noteLabel = UILabel()
+		noteLabel.font = noteFont
+		noteLabel.numberOfLines = 0
+		noteLabel.text = "Just enough to fit:"
+	
+		stackView.addArrangedSubview(noteLabel)
+		
+		testLabel = UILabel()
+		testLabel.backgroundColor = .yellow
+		testLabel.numberOfLines = 0
+		testLabel.attributedText = sampleAttrString(method: 0)
+
+		stackView.addArrangedSubview(testLabel)
+		
+		stackView.setCustomSpacing(20.0, after: testLabel)
+		
+		noteLabel = UILabel()
+		noteLabel.font = noteFont
+		noteLabel.numberOfLines = 0
+		noteLabel.text = "Using a space char:"
+		
+		stackView.addArrangedSubview(noteLabel)
+		
+		testLabel = UILabel()
+		testLabel.backgroundColor = .yellow
+		testLabel.numberOfLines = 0
+		testLabel.attributedText = sampleAttrString(method: 1)
+		
+		stackView.addArrangedSubview(testLabel)
+		
+		stackView.setCustomSpacing(20.0, after: testLabel)
+		
+		noteLabel = UILabel()
+		noteLabel.font = noteFont
+		noteLabel.numberOfLines = 0
+		noteLabel.text = "Using a non-break-space char:"
+		
+		stackView.addArrangedSubview(noteLabel)
+		
+		testLabel = UILabel()
+		testLabel.backgroundColor = .yellow
+		testLabel.numberOfLines = 0
+		testLabel.attributedText = sampleAttrString(method: 2)
+		
+		stackView.addArrangedSubview(testLabel)
+
+		stackView.setCustomSpacing(20.0, after: testLabel)
+		
+		noteLabel = UILabel()
+		noteLabel.font = noteFont
+		noteLabel.numberOfLines = 0
+		noteLabel.text = "Although, iOS 16 may give:"
+		
+		stackView.addArrangedSubview(noteLabel)
+		
+		testLabel = UILabel()
+		testLabel.backgroundColor = .yellow
+		testLabel.numberOfLines = 0
+		testLabel.attributedText = sampleAttrString(method: 3)
+		
+		stackView.addArrangedSubview(testLabel)
+		
+		stackView.setCustomSpacing(20.0, after: testLabel)
+		
+
+	}
+
+	func sampleAttrString(method: Int) -> NSMutableAttributedString {
+		let fontA: UIFont = .systemFont(ofSize: 20.0, weight: .bold)
+		
+		let attsA: [NSAttributedString.Key : Any] = [
+			.font: fontA,
+			.foregroundColor: UIColor.blue,
+		]
+		
+		let attsB: [NSAttributedString.Key : Any] = [
+			.font: fontA,
+			.foregroundColor: UIColor.red,
+		]
+		
+		var partOne = NSMutableAttributedString(string: "If the label has enough text so it wraps to more than two lines, UIKit will allow a last word orphan.", attributes: attsA)
+		
+		var partTwo: NSAttributedString = NSAttributedString()
+		
+		switch method {
+		case 0:
+			()
+		case 1:
+			partTwo = NSAttributedString(string: " *", attributes: attsB)
+		case 2:
+			partTwo = NSAttributedString(string: "\u{a0}*", attributes: attsB)
+		case 3:
+			partOne = NSMutableAttributedString(string: "If the label has enough text so it wraps to more than two lines, UIKit will allow a last\nword orphan.", attributes: attsA)
+			partTwo = NSAttributedString(string: "\u{a0}*", attributes: attsB)
+		default:
+			()
+		}
+		
+		partOne.append(partTwo)
+		
+		return partOne
+	}
+
+}
+
+class TransformImageView: UIImageView {
+	let textLayer = CATextLayer()
+	let shapeLayer = CAShapeLayer()
+	
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		
+		shapeLayer.strokeColor = UIColor.yellow.cgColor
+		shapeLayer.fillColor = UIColor.clear.cgColor
+		shapeLayer.lineWidth = 8
+		layer.addSublayer(shapeLayer)
+		
+		textLayer.string = "TEST"
+		textLayer.foregroundColor = UIColor.red.cgColor
+		let font: UIFont = .systemFont(ofSize: 40.0, weight: .bold)
+		textLayer.font = font
+		textLayer.alignmentMode = .center
+		textLayer.contentsScale = UIScreen.main.scale
+		layer.addSublayer(textLayer)
+		
+	}
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let pth = UIBezierPath(ovalIn: bounds.insetBy(dx: bounds.width * 0.1, dy: bounds.height * 0.1))
+		shapeLayer.path = pth.cgPath
+		shapeLayer.frame = bounds
+		
+		guard let font = textLayer.font else { return }
+		textLayer.frame = CGRect(x: bounds.minX, y: bounds.midY - (font.pointSize * 0.5), width: bounds.maxX, height: font.pointSize)
+	}
+	public func doTransform(_ idx: Int) {
+		
+		var tr: CATransform3D = CATransform3DIdentity
+		
+		// make sure everything is at identity
+		self.layer.transform = tr
+		self.layer.sublayerTransform = tr
+		self.textLayer.transform = tr
+		self.shapeLayer.transform = tr
+		
+		let v: CGFloat = 60.0
+		
+		switch idx {
+		case 1:
+			// transform entire view, including sublayers
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, -v * .pi / 180.0, 1.0, 0.0, 0.0)
+			self.layer.transform = tr
+		case 2:
+			// transform only sublayers
+			tr = CATransform3DIdentity
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, -v * .pi / 180.0, 1.0, 0.0, 0.0)
+			self.layer.sublayerTransform = tr
+		case 3:
+			// transform layer with one transform
+			//	only sublayers with another transform
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, v * .pi / 180.0, 1.0, 0.0, 0.0)
+			self.layer.transform = tr
+			tr = CATransform3DIdentity
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, v * .pi / 180.0, 0.0, 1.0, 0.0)
+			self.layer.sublayerTransform = tr
+		case 4:
+			// transform each sublayer individually
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, v * .pi / 180.0, 0.0, 0.0, 1.0)
+			self.textLayer.transform = tr
+			tr = CATransform3DIdentity
+			tr.m34 = 1.0 / 200.0
+			tr = CATransform3DRotate(tr, v * .pi / 180.0, 0.0, 1.0, 0.0)
+			self.shapeLayer.transform = tr
+		default:
+			// no transforms
+			break
+		}
+		
+
+	}
+}
+class UserDefsVC: UIViewController {
+	
+	let strs: [String] = [
+		".layer.transform",
+		".layer.sublayerTransform",
+		"Different transform for .layer and .sublayerTransform",
+		"no .layer transform, different transforms for each sublayer",
+	]
+	let infoLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 12.0, weight: .light)
+		v.textAlignment = .center
+		v.numberOfLines = 0
+		return v
+	}()
+	
+	var imgView: TransformImageView!
+	
+	var idx: Int = 0
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		guard let img = UIImage(named: "test") else {
+			fatalError("Could not load image!")
+		}
+		
+		let stackView = UIStackView()
+		stackView.axis = .vertical
+		stackView.spacing = 8
+		stackView.translatesAutoresizingMaskIntoConstraints = false
+
+		let seg = UISegmentedControl(items: ["1", "2", "3", "4"])
+		seg.addTarget(self, action: #selector(segChanged(_:)), for: .valueChanged)
+		
+		stackView.addArrangedSubview(seg)
+		
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 12.0, weight: .light)
+		v.textAlignment = .center
+		v.text = "Original - no Transforms"
+		stackView.addArrangedSubview(v)
+		
+		let defImgView = TransformImageView(frame: .zero)
+		defImgView.image = img
+		defImgView.heightAnchor.constraint(equalTo: defImgView.widthAnchor, multiplier: 2.0 / 3.0).isActive = true
+		stackView.addArrangedSubview(defImgView)
+
+		stackView.setCustomSpacing(40.0, after: defImgView)
+		
+		stackView.addArrangedSubview(infoLabel)
+		
+		imgView = TransformImageView(frame: .zero)
+		imgView.image = img
+		imgView.heightAnchor.constraint(equalTo: imgView.widthAnchor, multiplier: 2.0 / 3.0).isActive = true
+		stackView.addArrangedSubview(imgView)
+
+		view.addSubview(stackView)
+		let g = view.safeAreaLayoutGuide
+		NSLayoutConstraint.activate([
+			stackView.topAnchor.constraint(equalTo: g.topAnchor, constant: 8.0),
+			stackView.widthAnchor.constraint(equalToConstant: 240.0),
+			stackView.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+		])
+		
+		seg.selectedSegmentIndex = 0
+		segChanged(seg)
+	}
+	
+	@objc func segChanged(_ sender: UISegmentedControl) {
+		let idx = sender.selectedSegmentIndex
+		imgView.doTransform(idx + 1)
+		infoLabel.text = strs[idx]
 	}
 	
 }
