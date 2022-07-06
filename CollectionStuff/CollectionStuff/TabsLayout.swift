@@ -1175,23 +1175,15 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		super.viewDidLoad()
 		
 		// generate some sample data
-		let mediumRows: [Int] = [
-			3, 4, 9, 16, 17, 18, 19
+		var thirdLabelLineCounts: [Int] = [
+			6, 2, 4, 3, 2, 1, 3, 4, 4, 5, 4, 3, 1, 5, 6, 7, 8, 5, 4, 3, 5, 28, 28, 2, 28,
 		]
-		let tallRows: [Int] = [
-			7, 11, 12, 13, 21, 22
-		]
-		for i in 0..<30 {
+		//thirdLabelLineCounts = Array(repeating: 1, count: 100)
+		for (i, n) in thirdLabelLineCounts.enumerated() {
 			var str: MyDataStruct = MyDataStruct()
 			str.first = "Level \(i)"
 			str.second = "Foundation \(i)"
-			str.third = "Row \(i) some text"
-			if mediumRows.contains(i) {
-				str.third = "Row \(i) with enough text that we should get word wrapping."
-			}
-			if tallRows.contains(i) {
-				str.third = "Row \(i) with lots of text so we can see what happens when there is enough text to increase the row height. We set the arc radius to one-half the height of the row, and adjust its center to match the desired distance from the left or right side."
-			}
+			str.third = ((1...n).map { "Line \($0)" }).joined(separator: "\n")
 			myData.append(str)
 		}
 		
@@ -1233,9 +1225,17 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		tableView.contentInsetAdjustmentBehavior = .never
 		tableView.contentOffset.y = -8
 	}
+	override func viewDidAppear(_ animated: Bool) {
+		super.viewDidAppear(animated)
+		//tableView.scrollToRow(at: IndexPath(row: 90, section: 0), at: .none, animated: true)
+	}
 	override func viewDidLayoutSubviews() {
 		super.viewDidLayoutSubviews()
-		
+//		let c = PieCell()
+//		c.frame.size.width = tableView.frame.width
+//		c.fillData(myData[0], direction: .right)
+//		c.setNeedsLayout()
+//		c.layoutIfNeeded()
 		// this will be called when the frame changes (such as on device rotation)
 		//	so we have to re-calculate the row heights
 		//	which will update the background view
@@ -1250,7 +1250,6 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		c.fillData(myData[indexPath.row], direction: dir)
 		return c
 	}
-	
 	func scrollViewDidScroll(_ scrollView: UIScrollView) {
 		if let tv = scrollView as? UITableView {
 			if let a = tv.indexPathsForVisibleRows {
@@ -1371,6 +1370,7 @@ class PieCell: UITableViewCell {
 	private func commonInit() {
 		
 		[firstLabel, secondLabel, thirdLabel].forEach { v in
+			v.setContentCompressionResistancePriority(.required, for: .vertical)
 			stack.addArrangedSubview(v)
 		}
 		[pieView, stack].forEach { v in
