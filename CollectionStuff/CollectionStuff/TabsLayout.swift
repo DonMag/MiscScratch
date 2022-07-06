@@ -1035,10 +1035,7 @@ class AddressBookTableViewController: UITableViewController {
 
 class PieView: UIView {
 	
-	public var fillColor: UIColor = .red
-	public var strokeColor: UIColor = .black
-	
-	private let shapeLayer = CAShapeLayer()
+	private let shapeLayer1 = CAShapeLayer()
 	private let shapeLayer2 = CAShapeLayer()
 
 	override init(frame: CGRect) {
@@ -1050,32 +1047,31 @@ class PieView: UIView {
 		commonInit()
 	}
 	private func commonInit() {
-		layer.addSublayer(shapeLayer)
-		layer.addSublayer(shapeLayer2)
-		shapeLayer.fillColor = UIColor.white.cgColor
-		shapeLayer.strokeColor = UIColor.systemOrange.cgColor
-		shapeLayer2.fillColor = UIColor.systemOrange.cgColor
-		shapeLayer2.strokeColor = UIColor.systemOrange.cgColor
-		
-		shapeLayer.lineWidth = 2
-		shapeLayer2.lineWidth = 2
+		[shapeLayer1, shapeLayer2].forEach { v in
+			layer.addSublayer(v)
+			v.fillColor = UIColor.systemOrange.cgColor
+			v.strokeColor = UIColor.systemOrange.cgColor
+			v.lineWidth = 2
+		}
+		shapeLayer1.fillColor = UIColor.clear.cgColor
 	}
 	override func layoutSubviews() {
 		super.layoutSubviews()
 
-		var bez: UIBezierPath = UIBezierPath()
+		var bez: UIBezierPath!
 		let ptC: CGPoint = CGPoint(x: bounds.midX, y: bounds.midY)
 		let a1: Double = -90.0 * .pi / 180.0
 		let a2: Double = 135.0 * .pi / 180.0
+
+		bez = UIBezierPath()
+		bez.addArc(withCenter: ptC, radius: bounds.midX, startAngle: a2, endAngle: a1, clockwise: true)
+		shapeLayer1.path = bez.cgPath
+
+		bez = UIBezierPath()
 		bez.move(to: ptC)
 		bez.addArc(withCenter: ptC, radius: bounds.midX, startAngle: a1, endAngle: a2, clockwise: true)
 		bez.close()
-
 		shapeLayer2.path = bez.cgPath
-		
-		bez = UIBezierPath()
-		bez.addArc(withCenter: ptC, radius: bounds.midX, startAngle: a2, endAngle: a1, clockwise: true)
-		shapeLayer.path = bez.cgPath
 	}
 	
 }
@@ -1087,67 +1083,24 @@ struct MyDataStruct {
 	var first: String = ""
 	var second: String = ""
 	var third: String = ""
-	var direction: LayoutDirection = .left
-}
-
-class cDashedArcView: UIView {
-	
-	public var layoutDirection: LayoutDirection = .left {
-		didSet {
-			setNeedsLayout()
-		}
-	}
-	
-	private var shapeLayer: CAShapeLayer!
-	
-	override class var layerClass: AnyClass {
-		return CAShapeLayer.self
-	}
-
-	override init(frame: CGRect) {
-		super.init(frame: frame)
-		commonInit()
-	}
-	required init?(coder: NSCoder) {
-		super.init(coder: coder)
-		commonInit()
-	}
-	private func commonInit() {
-		shapeLayer = self.layer as? CAShapeLayer
-		shapeLayer.strokeColor = UIColor.blue.cgColor
-		shapeLayer.lineWidth = 4
-		shapeLayer.fillColor = UIColor.clear.cgColor
-		shapeLayer.lineDashPattern = [20, 10]
-	}
-	override func layoutSubviews() {
-		super.layoutSubviews()
-		
-		let inset: CGFloat = 32.0
-		let radius: CGFloat = bounds.midY
-		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
-		ptC.x = layoutDirection == .right ? bounds.maxX - (inset + radius) : inset + radius
-		let a1: Double = -90.0 * .pi / 180.0
-		let a2: Double = 90.0 * .pi / 180.0
-		let xOff: CGFloat = 0.0
-		
-		let bez = UIBezierPath()
-		bez.move(to: CGPoint(x: bounds.midX + xOff, y: bounds.minY - 0.0))
-		bez.addLine(to: CGPoint(x: ptC.x, y: bounds.minY))
-		if layoutDirection == .right {
-			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: true)
-		} else {
-			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: false)
-		}
-		bez.addLine(to: CGPoint(x: bounds.midX + xOff, y: bounds.maxY))
-		shapeLayer.path = bez.cgPath
-	}
 }
 
 class DashedArcView: UIView {
 	
-	public var startDirection: LayoutDirection = .left
+	public var startDirection: LayoutDirection = .right
+	
 	public var rowHeights: [CGFloat] = []
-	public var yOff: CGFloat = 0.0
+	
+	public var yOff: CGFloat = 0.0 {
+		didSet {
+			// disable layer animation and update the
+			//	shape layer's y position
+			CATransaction.begin()
+			CATransaction.setDisableActions(true)
+			shapeLayer.frame.origin.y = yOff
+			CATransaction.commit()
+		}
+	}
 	
 	private var shapeLayer: CAShapeLayer = CAShapeLayer()
 	
@@ -1162,8 +1115,8 @@ class DashedArcView: UIView {
 	private func commonInit() {
 		layer.addSublayer(shapeLayer)
 		shapeLayer.strokeColor = UIColor.red.cgColor
-		shapeLayer.lineWidth = 4
 		shapeLayer.fillColor = UIColor.clear.cgColor
+		shapeLayer.lineWidth = 4
 		shapeLayer.lineDashPattern = [20, 10]
 	}
 	override func layoutSubviews() {
@@ -1171,6 +1124,7 @@ class DashedArcView: UIView {
 		
 		guard rowHeights.count > 0 else { return }
 		
+		// distance from left/right edge for the arc
 		let inset: CGFloat = 32.0
 		
 		let angleStart: Double = -90.0 * .pi / 180.0
@@ -1183,6 +1137,9 @@ class DashedArcView: UIView {
 
 		let iDir: Int = startDirection == .right ? 0 : 1
 		
+		// loop through the rowHeights,
+		//	adding lines and arcs (alternating left/right/left/right/etc)
+		//	to the bezier path
 		for i in 0..<rowHeights.count {
 			let radius = rowHeights[i] * 0.5
 			if i % 2 == iDir {
@@ -1196,7 +1153,8 @@ class DashedArcView: UIView {
 			bez.addLine(to: CGPoint(x: bounds.midX, y: currentY))
 		}
 		
-		// disable layer animation
+		// disable layer animation and update the
+		//	shape layer's path and y position
 		CATransaction.begin()
 		CATransaction.setDisableActions(true)
 		shapeLayer.path = bez.cgPath
@@ -1212,26 +1170,33 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	let tableView = UITableView()
 	
 	let bkgView = DashedArcView()
-
+	
 	override func viewDidLoad() {
 		super.viewDidLoad()
-
+		
 		// generate some sample data
+		let mediumRows: [Int] = [
+			3, 4, 9, 16, 17, 18, 19
+		]
+		let tallRows: [Int] = [
+			7, 11, 12, 13, 21, 22
+		]
 		for i in 0..<30 {
 			var str: MyDataStruct = MyDataStruct()
 			str.first = "Level \(i)"
 			str.second = "Foundation \(i)"
 			str.third = "Row \(i) some text"
-			if i % 3 == 0 {
-				str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD"
+			if mediumRows.contains(i) {
+				str.third = "Row \(i) with enough text that we should get word wrapping."
 			}
-			//str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ"
-			str.direction = i % 2 == 0 ? .right : .left
+			if tallRows.contains(i) {
+				str.third = "Row \(i) with lots of text so we can see what happens when there is enough text to increase the row height. We set the arc radius to one-half the height of the row, and adjust its center to match the desired distance from the left or right side."
+			}
 			myData.append(str)
 		}
 		
 		let g = view.safeAreaLayoutGuide
-
+		
 		tableView.translatesAutoresizingMaskIntoConstraints = false
 		view.addSubview(tableView)
 		
@@ -1244,7 +1209,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
 			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
 			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
-
+			
 			bkgView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
 			bkgView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
 			bkgView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
@@ -1255,7 +1220,262 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		tableView.dataSource = self
 		tableView.delegate = self
 		tableView.separatorStyle = .none
+		
+		// because the dashed line will extend above the top of the first cell
+		// 	and below the bottom of the last cell
+		// we want to add a little "inset padding" on top and bottom of the table view
+		
+		var defaultInset = tableView.contentInset
+		defaultInset.top += 8
+		defaultInset.bottom += 8
+		tableView.contentInset = defaultInset
 
+		tableView.contentInsetAdjustmentBehavior = .never
+		tableView.contentOffset.y = -8
+	}
+	override func viewDidLayoutSubviews() {
+		super.viewDidLayoutSubviews()
+		
+		// this will be called when the frame changes (such as on device rotation)
+		//	so we have to re-calculate the row heights
+		//	which will update the background view
+		scrollViewDidScroll(tableView)
+	}
+	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+		return myData.count
+	}
+	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! PieCell
+		let dir: LayoutDirection = indexPath.row % 2 == 0 ? .right : .left
+		c.fillData(myData[indexPath.row], direction: dir)
+		return c
+	}
+	
+	func scrollViewDidScroll(_ scrollView: UIScrollView) {
+		if let tv = scrollView as? UITableView {
+			if let a = tv.indexPathsForVisibleRows {
+				var needsUpdate: Bool = false
+				// get the current array of heights from bkgView
+				var rHeights: [CGFloat] = bkgView.rowHeights
+				// loop through visible rows
+				a.forEach { pth in
+					if let c = tv.cellForRow(at: pth) {
+						let f = c.frame
+						if pth.row > rHeights.count - 1 {
+							rHeights.append(0.0)
+						}
+						if rHeights[pth.row] != f.size.height {
+							needsUpdate = true
+							rHeights[pth.row] = f.size.height
+						}
+					}
+				}
+				// only tell bkgView to re-generate its path
+				//	if the height of one or more rows has changed
+				if needsUpdate {
+					bkgView.rowHeights = rHeights
+					bkgView.setNeedsLayout()
+				}
+			}
+			// update background view's y-offset
+			bkgView.yOff = -scrollView.contentOffset.y
+		}
+	}
+}
+
+
+class PieCell: UITableViewCell {
+	
+	private var layoutDirection: LayoutDirection = .right {
+		didSet {
+			
+			// update horizontal constraints to position the pieView and labels stack view
+			
+			let g = contentView
+
+			pieHorizontalConstraint.isActive = false
+			stackLeadingConstraint.isActive = false
+			stackTrailingConstraint.isActive = false
+
+			if layoutDirection == .left {
+				// pie is on the left
+				pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -40.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .left
+				}
+			} else {
+				// pie is on the right
+				pieHorizontalConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 40.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .right
+				}
+			}
+
+			pieHorizontalConstraint.isActive = true
+			stackLeadingConstraint.isActive = true
+			stackTrailingConstraint.isActive = true
+			
+		}
+	}
+	
+	func fillData(_ str: MyDataStruct, direction: LayoutDirection) {
+		firstLabel.text = str.first
+		secondLabel.text = str.second
+		thirdLabel.text = str.third
+		layoutDirection = direction
+	}
+	
+	private let pieView = PieView()
+	
+	private let firstLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 13.0, weight: .regular)
+		return v
+	}()
+	private let secondLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 16.0, weight: .bold)
+		return v
+	}()
+	private let thirdLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 13.0, weight: .regular)
+		v.numberOfLines = 0
+		return v
+	}()
+	
+	// stack view for the labels
+	private let stack: UIStackView = {
+		let v = UIStackView()
+		v.axis = .vertical
+		v.spacing = 2
+		return v
+	}()
+
+	private var pieHorizontalConstraint: NSLayoutConstraint!
+	private var stackLeadingConstraint: NSLayoutConstraint!
+	private var stackTrailingConstraint: NSLayoutConstraint!
+
+	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+		super.init(style: style, reuseIdentifier: reuseIdentifier)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		
+		[firstLabel, secondLabel, thirdLabel].forEach { v in
+			stack.addArrangedSubview(v)
+		}
+		[pieView, stack].forEach { v in
+			v.translatesAutoresizingMaskIntoConstraints = false
+			contentView.addSubview(v)
+		}
+		
+		let g = contentView
+		
+		// initialize the horizontal constraints that we will update
+		//	based on left or right layout
+		pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
+		stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+		stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+		
+		// avoid auto-layout complaints
+		// 	pieView is square (1:1 ratio)
+
+		// pieView width constant
+		pieView.widthAnchor.constraint(equalToConstant: 60.0).isActive = true
+		
+		let pieHeightConstraint = pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor)
+		pieHeightConstraint.priority = .required - 1
+		pieHeightConstraint.isActive = true
+		
+		NSLayoutConstraint.activate([
+			
+			// center the pieView vertically
+			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			
+			// we want at least 12-points above and below the pieView
+			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
+			
+			// center the labels stack view vertically
+			stack.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			
+			// we want at least 12-points above and below the stack view
+			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
+
+		])
+		
+		// we need to see the table view's background view through the cells
+		contentView.backgroundColor = .clear
+		self.backgroundColor = .clear
+	
+		// during development, if we want to see the framing
+		//pieView.backgroundColor = .green
+		//stack.backgroundColor = .yellow
+	}
+	
+}
+
+/*
+class xPiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
+	
+	var myData: [MyDataStruct] = []
+	
+	let tableView = UITableView()
+	
+	let bkgView = DashedArcView()
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		// generate some sample data
+		for i in 0..<30 {
+			var str: MyDataStruct = MyDataStruct()
+			str.first = "Level \(i)"
+			str.second = "Foundation \(i)"
+			str.third = "Row \(i) some text"
+			if i % 3 == 0 {
+				str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD"
+			}
+			str.direction = i % 2 == 0 ? .right : .left
+			myData.append(str)
+		}
+		
+		let g = view.safeAreaLayoutGuide
+		
+		tableView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(tableView)
+		
+		bkgView.translatesAutoresizingMaskIntoConstraints = false
+		bkgView.startDirection = .right
+		tableView.backgroundView = bkgView
+		
+		NSLayoutConstraint.activate([
+			tableView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
+			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
+			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
+			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
+			
+			bkgView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
+			bkgView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
+			bkgView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
+			bkgView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
+		])
+		
+		tableView.register(PieCell.self, forCellReuseIdentifier: "c")
+		tableView.dataSource = self
+		tableView.delegate = self
+		tableView.separatorStyle = .none
+		
 		// because the dashed line will extend above the top of the first cell
 		// 	and below the bottom of the last cell
 		// we want to add a little "inset padding" on top and bottom of the table view
@@ -1305,85 +1525,22 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		}
 	}
 }
-
-class PieCell: UITableViewCell {
+class cDashedArcView: UIView {
 	
-	var layoutDirection: LayoutDirection = .left {
+	public var layoutDirection: LayoutDirection = .left {
 		didSet {
-			let g = contentView
-
-			pieHorizontalConstraint.isActive = false
-			stackLeadingConstraint.isActive = false
-			stackTrailingConstraint.isActive = false
-
-			if layoutDirection == .left {
-				// pie is on the left
-				pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 48.0)
-				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
-				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20.0)
-				[firstLabel, secondLabel, thirdLabel].forEach { v in
-					v.textAlignment = .left
-				}
-			} else {
-				// pie is on the right
-				pieHorizontalConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -48.0)
-				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20.0)
-				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
-				[firstLabel, secondLabel, thirdLabel].forEach { v in
-					v.textAlignment = .right
-				}
-			}
-
-			pieHorizontalConstraint.isActive = true
-			stackLeadingConstraint.isActive = true
-			stackTrailingConstraint.isActive = true
+			setNeedsLayout()
 		}
 	}
 	
-	func fillData(_ str: MyDataStruct) {
-		firstLabel.text = str.first
-		secondLabel.text = str.second
-		thirdLabel.text = str.third
-		layoutDirection = str.direction
+	private var shapeLayer: CAShapeLayer!
+	
+	override class var layerClass: AnyClass {
+		return CAShapeLayer.self
 	}
 	
-	private let pieView = PieView()
-	
-	private let firstLabel: UILabel = {
-		let v = UILabel()
-		v.font = .systemFont(ofSize: 10.0, weight: .regular)
-		v.text = "Level 1"
-		return v
-	}()
-	private let secondLabel: UILabel = {
-		let v = UILabel()
-		v.font = .systemFont(ofSize: 12.0, weight: .bold)
-		v.text = "Foundation"
-		return v
-	}()
-	private let thirdLabel: UILabel = {
-		let v = UILabel()
-		v.font = .systemFont(ofSize: 10.0, weight: .regular)
-		v.text = "Reshape your lifestyles"
-		v.numberOfLines = 0
-		return v
-	}()
-	
-	// stack view for the labels
-	private let stack: UIStackView = {
-		let v = UIStackView()
-		v.axis = .vertical
-		v.spacing = 2
-		return v
-	}()
-
-	private var pieHorizontalConstraint: NSLayoutConstraint!
-	private var pieTrailingConstraint: NSLayoutConstraint!
-	private var stackLeadingConstraint: NSLayoutConstraint!
-	private var stackTrailingConstraint: NSLayoutConstraint!
-
-	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-		super.init(style: style, reuseIdentifier: reuseIdentifier)
+	override init(frame: CGRect) {
+		super.init(frame: frame)
 		commonInit()
 	}
 	required init?(coder: NSCoder) {
@@ -1391,46 +1548,37 @@ class PieCell: UITableViewCell {
 		commonInit()
 	}
 	private func commonInit() {
-		
-		[firstLabel, secondLabel, thirdLabel].forEach { v in
-			stack.addArrangedSubview(v)
-		}
-		[pieView, stack].forEach { v in
-			v.translatesAutoresizingMaskIntoConstraints = false
-			contentView.addSubview(v)
-		}
-		
-		let g = contentView
-		
-		pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
-		stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
-		stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
-		
-		// avoid auto-layout complaints
-		let pieHeightConstraint = pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor)
-		pieHeightConstraint.priority = .required - 1
-		
-		NSLayoutConstraint.activate([
-			
-			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
-			pieView.widthAnchor.constraint(equalToConstant: 60.0),
-			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
-			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
-			
-			pieHeightConstraint, pieHorizontalConstraint,
-			
-			stack.centerYAnchor.constraint(equalTo: g.centerYAnchor),
-			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
-			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
-
-		])
-		
-		contentView.backgroundColor = .clear
-		self.backgroundColor = .clear
-	
+		shapeLayer = self.layer as? CAShapeLayer
+		shapeLayer.strokeColor = UIColor.blue.cgColor
+		shapeLayer.lineWidth = 4
+		shapeLayer.fillColor = UIColor.clear.cgColor
+		shapeLayer.lineDashPattern = [20, 10]
 	}
-	
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let inset: CGFloat = 32.0
+		let radius: CGFloat = bounds.midY
+		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
+		ptC.x = layoutDirection == .right ? bounds.maxX - (inset + radius) : inset + radius
+		let a1: Double = -90.0 * .pi / 180.0
+		let a2: Double = 90.0 * .pi / 180.0
+		let xOff: CGFloat = 0.0
+		
+		let bez = UIBezierPath()
+		bez.move(to: CGPoint(x: bounds.midX + xOff, y: bounds.minY - 0.0))
+		bez.addLine(to: CGPoint(x: ptC.x, y: bounds.minY))
+		if layoutDirection == .right {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: true)
+		} else {
+			bez.addArc(withCenter: ptC, radius: bounds.midY, startAngle: a1, endAngle: a2, clockwise: false)
+		}
+		bez.addLine(to: CGPoint(x: bounds.midX + xOff, y: bounds.maxY))
+		shapeLayer.path = bez.cgPath
+	}
 }
+*/
+
 
 class TVTestVC: UIViewController {
 	
