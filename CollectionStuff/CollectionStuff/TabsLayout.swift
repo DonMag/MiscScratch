@@ -1090,7 +1090,7 @@ struct MyDataStruct {
 	var direction: LayoutDirection = .left
 }
 
-class DashedArcView: UIView {
+class cDashedArcView: UIView {
 	
 	public var layoutDirection: LayoutDirection = .left {
 		didSet {
@@ -1143,10 +1143,10 @@ class DashedArcView: UIView {
 	}
 }
 
-class DashedArcBKGView: UIView {
+class DashedArcView: UIView {
 	
-	public var layoutDirection: LayoutDirection = .left
-	public var yVals: [CGFloat] = []
+	public var startDirection: LayoutDirection = .left
+	public var rowHeights: [CGFloat] = []
 	public var yOff: CGFloat = 0.0
 	
 	private var shapeLayer: CAShapeLayer = CAShapeLayer()
@@ -1169,47 +1169,37 @@ class DashedArcBKGView: UIView {
 	override func layoutSubviews() {
 		super.layoutSubviews()
 		
-		guard yVals.count > 0 else { return }
+		guard rowHeights.count > 0 else { return }
 		
 		let inset: CGFloat = 32.0
-		let radius: CGFloat = bounds.midY
 		
-		var ptLeftC: CGPoint = .zero
-		var ptRightC: CGPoint = .zero
-
-		ptLeftC.x = inset + radius
-		ptRightC.x = bounds.maxX - (inset + radius)
+		let angleStart: Double = -90.0 * .pi / 180.0
+		let angleEnd: Double = 90.0 * .pi / 180.0
 		
-		
-		var ptC: CGPoint = CGPoint(x: 0.0, y: bounds.midY)
-		ptC.x = layoutDirection == .right ? bounds.maxX - (inset + radius) : inset + radius
-		
-		let a1: Double = -90.0 * .pi / 180.0
-		let a2: Double = 90.0 * .pi / 180.0
-		let xOff: CGFloat = 0.0
-		var prevY: CGFloat = 0.0
+		var currentY: CGFloat = 0.0
 		
 		let bez = UIBezierPath()
 		bez.move(to: CGPoint(x: bounds.midX, y: 0.0))
 
-		let iDir: Int = layoutDirection == .right ? 0 : 1
+		let iDir: Int = startDirection == .right ? 0 : 1
 		
-		for i in 0..<yVals.count {
-			let r = yVals[i] * 0.5
+		for i in 0..<rowHeights.count {
+			let radius = rowHeights[i] * 0.5
 			if i % 2 == iDir {
-				bez.addLine(to: CGPoint(x: bounds.maxX - (inset + r), y: prevY))
-				bez.addArc(withCenter: CGPoint(x: bounds.maxX - (inset + r), y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: true)
+				bez.addLine(to: CGPoint(x: bounds.maxX - (inset + radius), y: currentY))
+				bez.addArc(withCenter: CGPoint(x: bounds.maxX - (inset + radius), y: currentY + radius), radius: radius, startAngle: angleStart, endAngle: angleEnd, clockwise: true)
 			} else {
-				bez.addLine(to: CGPoint(x: bounds.minX + inset + r, y: prevY))
-				bez.addArc(withCenter: CGPoint(x: bounds.minX + inset + r, y: prevY + r), radius: r, startAngle: a1, endAngle: a2, clockwise: false)
+				bez.addLine(to: CGPoint(x: bounds.minX + inset + radius, y: currentY))
+				bez.addArc(withCenter: CGPoint(x: bounds.minX + inset + radius, y: currentY + radius), radius: radius, startAngle: angleStart, endAngle: angleEnd, clockwise: false)
 			}
-			prevY += yVals[i]
-			bez.addLine(to: CGPoint(x: bounds.midX, y: prevY))
+			currentY += rowHeights[i]
+			bez.addLine(to: CGPoint(x: bounds.midX, y: currentY))
 		}
 		
-		shapeLayer.path = bez.cgPath
+		// disable layer animation
 		CATransaction.begin()
 		CATransaction.setDisableActions(true)
+		shapeLayer.path = bez.cgPath
 		shapeLayer.frame.origin.y = yOff
 		CATransaction.commit()
 	}
@@ -1220,11 +1210,8 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	var myData: [MyDataStruct] = []
 	
 	let tableView = UITableView()
-	var hs: [CGFloat] = [
-		100, 100, 160, 140, 100, 200, 120,
-	]
 	
-	let bkgView = DashedArcBKGView()
+	let bkgView = DashedArcView()
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -1238,6 +1225,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 			if i % 3 == 0 {
 				str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD"
 			}
+			//str.third = "Row \(i) with lots of text so we can see what happends when the cell is taller than the others.\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ"
 			str.direction = i % 2 == 0 ? .right : .left
 			myData.append(str)
 		}
@@ -1248,7 +1236,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		view.addSubview(tableView)
 		
 		bkgView.translatesAutoresizingMaskIntoConstraints = false
-		bkgView.layoutDirection = .right
+		bkgView.startDirection = .right
 		tableView.backgroundView = bkgView
 		
 		NSLayoutConstraint.activate([
@@ -1263,7 +1251,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 			bkgView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
 		])
 		
-		tableView.register(PieLineCell.self, forCellReuseIdentifier: "c")
+		tableView.register(PieCell.self, forCellReuseIdentifier: "c")
 		tableView.dataSource = self
 		tableView.delegate = self
 		tableView.separatorStyle = .none
@@ -1271,22 +1259,28 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		// because the dashed line will extend above the top of the first cell
 		// 	and below the bottom of the last cell
 		// we want to add a little "inset padding" on top and bottom of the table view
+		
+		tableView.contentInsetAdjustmentBehavior = .never
+		
 		var defaultInset = tableView.contentInset
 		defaultInset.top += 8
 		defaultInset.bottom += 8
 		tableView.contentInset = defaultInset
-	}
-	override func viewDidAppear(_ animated: Bool) {
-		super.viewDidAppear(animated)
-		scrollViewDidScroll(tableView)
-		// adjust the table view to show the very top dashed line
 		tableView.contentOffset.y = -8
+	}
+	override func viewDidLayoutSubviews() {
+		super.viewDidLayoutSubviews()
+		
+		// this will be called when the frame changes (such as on device rotation)
+		//	so we have to re-calculate the row heights
+		//	which will update the background view
+		scrollViewDidScroll(tableView)
 	}
 	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 		return myData.count
 	}
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! PieLineCell
+		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! PieCell
 		c.fillData(myData[indexPath.row])
 		return c
 	}
@@ -1294,28 +1288,25 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	func scrollViewDidScroll(_ scrollView: UIScrollView) {
 		if let tv = scrollView as? UITableView {
 			if let a = tv.indexPathsForVisibleRows {
-				var yVals: [CGFloat] = bkgView.yVals
+				var rHeights: [CGFloat] = bkgView.rowHeights
 				a.forEach { pth in
 					if let c = tv.cellForRow(at: pth) {
 						let f = c.frame
-						if pth.row > yVals.count - 1 {
-							yVals.append(0.0)
+						if pth.row > rHeights.count - 1 {
+							rHeights.append(0.0)
 						}
-						yVals[pth.row] = f.size.height
-//						if pth == a.last {
-//							yVals.append(f.origin.y - tv.contentOffset.y + f.size.height)
-//						}
+						rHeights[pth.row] = f.size.height
 					}
 				}
 				bkgView.yOff = -scrollView.contentOffset.y
-				bkgView.yVals = yVals
+				bkgView.rowHeights = rHeights
 				bkgView.setNeedsLayout()
 			}
 		}
 	}
 }
 
-class PieLineCell: UITableViewCell {
+class PieCell: UITableViewCell {
 	
 	var layoutDirection: LayoutDirection = .left {
 		didSet {
@@ -1346,8 +1337,6 @@ class PieLineCell: UITableViewCell {
 			pieHorizontalConstraint.isActive = true
 			stackLeadingConstraint.isActive = true
 			stackTrailingConstraint.isActive = true
-
-			dashedArcView.layoutDirection = layoutDirection
 		}
 	}
 	
@@ -1357,8 +1346,6 @@ class PieLineCell: UITableViewCell {
 		thirdLabel.text = str.third
 		layoutDirection = str.direction
 	}
-	
-	private let dashedArcView = DashedArcView()
 	
 	private let pieView = PieView()
 	
@@ -1408,7 +1395,7 @@ class PieLineCell: UITableViewCell {
 		[firstLabel, secondLabel, thirdLabel].forEach { v in
 			stack.addArrangedSubview(v)
 		}
-		[dashedArcView, pieView, stack].forEach { v in
+		[pieView, stack].forEach { v in
 			v.translatesAutoresizingMaskIntoConstraints = false
 			contentView.addSubview(v)
 		}
@@ -1425,11 +1412,6 @@ class PieLineCell: UITableViewCell {
 		
 		NSLayoutConstraint.activate([
 			
-			dashedArcView.topAnchor.constraint(equalTo: g.topAnchor),
-			dashedArcView.leadingAnchor.constraint(equalTo: g.leadingAnchor),
-			dashedArcView.trailingAnchor.constraint(equalTo: g.trailingAnchor),
-			dashedArcView.bottomAnchor.constraint(equalTo: g.bottomAnchor),
-
 			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
 			pieView.widthAnchor.constraint(equalToConstant: 60.0),
 			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
@@ -1446,7 +1428,6 @@ class PieLineCell: UITableViewCell {
 		contentView.backgroundColor = .clear
 		self.backgroundColor = .clear
 	
-		dashedArcView.isHidden = true
 	}
 	
 }
