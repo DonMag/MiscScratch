@@ -1277,6 +1277,8 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
 		tableView.contentInsetAdjustmentBehavior = .never
 		tableView.contentOffset.y = -8
+		
+		
 	}
 	override func viewDidAppear(_ animated: Bool) {
 		super.viewDidAppear(animated)
@@ -2380,4 +2382,356 @@ class UserDefsVC: UIViewController {
 		infoLabel.text = strs[idx]
 	}
 	
+}
+
+class MultiChildViewController: UIViewController {
+
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		let origString: String = "This is your test of looping replacement"
+
+		// characters to replace
+		let origChars: [String] = ["a", "e", "i", "o", "u"]
+		
+		// replace with these characters
+		let replChars: [[String]] = [
+			["á", "é", "í", "ó", "ú"],
+			["ǎ", "ě", "ǐ", "ǒ", "ǔ"],
+			["à", "è", "ì", "ò", "ù"],
+			
+			// add more sets
+			["1", "2", "3", "4", "5"],
+			["ⓐ", "ⓔ", "ⓘ", "ⓞ", "ⓤ"],
+		]
+		
+		// mutable array of copies of the original string
+		var resultStrings: [String] = Array(repeating: origString, count: replChars.count)
+		
+		// for each copy
+		for i in 0..<resultStrings.count {
+			// for each orig char
+			for (oChar, rChar) in zip(origChars, replChars[i]) {
+				// replace with replacement car
+				resultStrings[i] = resultStrings[i].replacingOccurrences(of: oChar, with: rChar)
+			}
+		}
+		
+		// print the original string
+		print(origString)
+		
+		// print the resulting replacement strings
+		resultStrings.forEach {
+			print($0)
+		}
+
+		print()
+		print()
+
+/*
+		let replChars: [[String]] = [
+			["á", "ǎ", "à"],
+			["é", "ě", "è"],
+			["í", "ǐ", "ì"],
+			["ó", "ǒ", "ò"],
+			["ú", "ǔ", "ù"],
+		]
+		
+		var newA: [[String]] = []
+		for i in 0..<3 {
+			var a: [String] = []
+			var s: String = ""
+			for j in 0..<5 {
+				a.append(replChars[j][i])
+				s += "\"" + replChars[j][i] + "\","
+			}
+			print(s)
+			newA.append(a)
+		}
+
+		// we want an array of strings
+		//	each replacing "aeiou" with replacement variations
+		var replacedStrings: [String] = Array(repeating: origString, count: replChars[0].count)
+		
+		for (oChar, rChars) in zip(origChars, replChars) {
+			for n in 0..<rChars.count {
+				replacedStrings[n] = replacedStrings[n].replacingOccurrences(of: oChar, with: rChars[n])
+			}
+		}
+		
+		
+//		for (o, r) in zip(orig, repl) {
+//			for i in 0..<r.count {
+//				replacedArray[i] = replacedArray[i].replacingOccurrences(of: o, with: r[i])
+//			}
+//		}
+		replacedStrings.forEach {
+			print($0)
+		}
+
+//		var resultStr = str.replacingOccurrences(of: "a", with: "á")
+//		resultStr = resultStr.replacingOccurrences(of: "e", with: "é")
+//		resultStr = resultStr.replacingOccurrences(of: "o", with: "ó")
+//		print(resultStr)
+		
+*/
+		
+		let seg = UISegmentedControl(items: ["First", "Second", "Third"])
+		seg.addTarget(self, action: #selector(segChanged(_:)), for: .valueChanged)
+		seg.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(seg)
+		
+		// respect safe area
+		let safeG = view.safeAreaLayoutGuide
+		
+		NSLayoutConstraint.activate([
+			seg.topAnchor.constraint(equalTo: safeG.topAnchor, constant: 20.0),
+			seg.leadingAnchor.constraint(equalTo: safeG.leadingAnchor, constant: 20.0),
+			seg.trailingAnchor.constraint(equalTo: safeG.trailingAnchor, constant: -20.0),
+		])
+
+		// instantiate 3 view controllers
+		let firstVC = FirstVC()
+		let secondVC = SecondVC()
+		let thirdVC = ThirdVC()
+
+		// for each view controller
+		[firstVC, secondVC, thirdVC].forEach { vc in
+			// add it as a child
+			self.addChild(vc)
+			// add its view
+			view.addSubview(vc.view)
+			// layout its view
+			vc.view.translatesAutoresizingMaskIntoConstraints = false
+			NSLayoutConstraint.activate([
+				// constrain top to segmented control bottom plus 20-points
+				vc.view.topAnchor.constraint(equalTo: seg.bottomAnchor, constant: 20.0),
+				// we'll constrain leading/trailing/bottom to the safe area
+				//	with 20-points "padding"
+				vc.view.leadingAnchor.constraint(equalTo: safeG.leadingAnchor, constant: 20.0),
+				vc.view.trailingAnchor.constraint(equalTo: safeG.trailingAnchor, constant: -20.0),
+				vc.view.bottomAnchor.constraint(equalTo: safeG.bottomAnchor, constant: -20.0),
+			])
+			// start with all child controller views hidden
+			vc.view.isHidden = true
+			// finish the add child process
+			vc.didMove(toParent: self)
+		}
+		
+		// set the segmented control's selected segment to Zero
+		seg.selectedSegmentIndex = 0
+		
+		// show first child controller view
+		self.children.first?.view.isHidden = false
+
+	}
+	
+	@objc func segChanged(_ sender: UISegmentedControl) {
+		let idx = sender.selectedSegmentIndex
+		for (i, vc) in self.children.enumerated() {
+			vc.view.isHidden = i != idx
+		}
+	}
+
+}
+
+class FirstVC: UIViewController {
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		view.backgroundColor = .systemRed
+		
+		let v = UILabel()
+		v.textAlignment = .center
+		v.backgroundColor = UIColor(white: 0.95, alpha: 1.0)
+		v.text = "First VC"
+		v.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(v)
+		
+		NSLayoutConstraint.activate([
+			v.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20.0),
+			v.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20.0),
+			v.heightAnchor.constraint(equalToConstant: 100.0),
+			v.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+		])
+	}
+}
+
+class SecondVC: UIViewController {
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		view.backgroundColor = .systemGreen
+		
+		let v = UILabel()
+		v.textAlignment = .center
+		v.backgroundColor = UIColor(white: 0.95, alpha: 1.0)
+		v.text = "Second VC"
+		v.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(v)
+		
+		NSLayoutConstraint.activate([
+			v.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20.0),
+			v.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20.0),
+			v.heightAnchor.constraint(equalToConstant: 100.0),
+			v.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+		])
+	}
+}
+
+class ThirdVC: UIViewController {
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		view.backgroundColor = .systemBlue
+		
+		let v = UILabel()
+		v.textAlignment = .center
+		v.backgroundColor = UIColor(white: 0.95, alpha: 1.0)
+		v.text = "Third VC"
+		v.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(v)
+		
+		NSLayoutConstraint.activate([
+			v.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20.0),
+			v.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20.0),
+			v.heightAnchor.constraint(equalToConstant: 100.0),
+			v.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+		])
+	}
+}
+
+
+class SimpleListVCModel {
+	var dataSource: UICollectionViewDiffableDataSource<Section, String>! = nil
+	var items = Array(0..<10).map{"This is item \($0)"}
+	
+	enum Section: String {
+		case main
+	}
+	
+	func configureDataSource(using collectionView: UICollectionView) {
+		let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, String> { (cell, indexPath, item) in
+			var content = cell.defaultContentConfiguration()
+			content.text = "\(item)"
+			cell.contentConfiguration = content
+		}
+		
+		dataSource = UICollectionViewDiffableDataSource<Section, String>(collectionView: collectionView) {
+			(collectionView: UICollectionView, indexPath: IndexPath, identifier: String) -> UICollectionViewCell? in
+			
+			return collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: identifier)
+		}
+	}
+	
+	func applySnapshot() {
+		var snapshot = NSDiffableDataSourceSnapshot<Section, String>()
+		snapshot.appendSections([.main])
+		snapshot.appendItems(items)
+		
+		dataSource.apply(snapshot, animatingDifferences: false)
+	}
+}
+
+/*
+class SimListViewController: SimpleListViewController {
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		navigationItem.title = "List"
+		view.backgroundColor = .red
+		configureHierarchy()
+		model.configureDataSource(using: collectionView)
+		model.applySnapshot()
+	}
+	
+	func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+		print("Here")
+	}
+}
+class SimpleListViewController: UIViewController, UICollectionViewDelegate {
+	var collectionView: UICollectionView! = nil
+	let model = SimpleListVCModel()
+	
+	func configureHierarchy() {
+		let layout = UICollectionViewCompositionalLayout.list(using: .init(appearance: .insetGrouped))
+		collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
+		collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+		collectionView.delegate = self
+		view.addSubview(collectionView)
+	}
+}
+*/
+
+class ViewControllerViewModel: SimpleListVCModel {
+	func foo(){
+		print("Foo")
+	}
+}
+
+class SimpleListViewController<M: SimpleListVCModel>: UIViewController, UICollectionViewDelegate {
+	let model: M
+	var collectionView: UICollectionView! = nil
+	
+	
+	//MARK: - Initializer
+	init(model: M) {
+		self.model = model
+		super.init(nibName: nil, bundle: nil)
+	}
+	
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
+	
+	
+	//MARK: - Views
+	func configureHierarchy() {
+		let layout = UICollectionViewCompositionalLayout.list(using: .init(appearance: .insetGrouped))
+		collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
+		collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+		collectionView.delegate = self
+		view.addSubview(collectionView)
+	}
+	
+//	func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+//		print("Selected item: \(indexPath) in SimpleListViewController")
+//		// do something common
+//	}
+
+}
+
+class SimListViewController: SimpleListViewController<ViewControllerViewModel> {
+	override init(model: ViewControllerViewModel = ViewControllerViewModel()) {
+		super.init(model: model)
+	}
+	
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		navigationItem.title = "List"
+		view.backgroundColor = .red
+		configureHierarchy()
+		model.configureDataSource(using: collectionView)
+		model.applySnapshot()
+		model.foo()
+	}
+	
+	@objc (collectionView:didSelectItemAtIndexPath:)
+
+	func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+		//super.collectionView(collectionView, didSelectItemAt: indexPath)
+		print("Selected item: \(indexPath) in ViewController")
+	}
+
+}
+
+class LauncherVC: UIViewController {
+	
+	@IBAction func tapp(_ sender: Any) {
+		let vc = SimListViewController()
+		navigationController?.pushViewController(vc, animated: true)
+	}
 }
