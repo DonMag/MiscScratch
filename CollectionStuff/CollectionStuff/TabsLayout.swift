@@ -1102,7 +1102,7 @@ class DashedArcView: UIView {
 		}
 	}
 	
-	private var shapeLayer: CAShapeLayer = CAShapeLayer()
+	var shapeLayer: CAShapeLayer = CAShapeLayer()
 	
 	override init(frame: CGRect) {
 		super.init(frame: frame)
@@ -1118,7 +1118,52 @@ class DashedArcView: UIView {
 		shapeLayer.fillColor = UIColor.clear.cgColor
 		shapeLayer.lineWidth = 4
 		shapeLayer.lineDashPattern = [20, 10]
+		
+		shapeLayer.backgroundColor = UIColor.red.withAlphaComponent(0.5).cgColor
 	}
+	func updatePath() {
+		
+		guard rowHeights.count > 0 else { return }
+		
+		// distance from left/right edge for the arc
+		let inset: CGFloat = 32.0
+		
+		let angleStart: Double = -90.0 * .pi / 180.0
+		let angleEnd: Double = 90.0 * .pi / 180.0
+		
+		var currentY: CGFloat = 0.0
+		
+		let bez = UIBezierPath()
+		bez.move(to: CGPoint(x: bounds.midX, y: 0.0))
+		
+		let iDir: Int = startDirection == .right ? 0 : 1
+		
+		// loop through the rowHeights,
+		//	adding lines and arcs (alternating left/right/left/right/etc)
+		//	to the bezier path
+		for i in 0..<rowHeights.count {
+			let radius = rowHeights[i] * 0.5
+			if i % 2 == iDir {
+				bez.addLine(to: CGPoint(x: bounds.maxX - (inset + radius), y: currentY))
+				bez.addArc(withCenter: CGPoint(x: bounds.maxX - (inset + radius), y: currentY + radius), radius: radius, startAngle: angleStart, endAngle: angleEnd, clockwise: true)
+			} else {
+				bez.addLine(to: CGPoint(x: bounds.minX + inset + radius, y: currentY))
+				bez.addArc(withCenter: CGPoint(x: bounds.minX + inset + radius, y: currentY + radius), radius: radius, startAngle: angleStart, endAngle: angleEnd, clockwise: false)
+			}
+			currentY += rowHeights[i]
+			bez.addLine(to: CGPoint(x: bounds.midX, y: currentY))
+
+			shapeLayer.frame.size = CGSize(width: 200.0, height: bez.currentPoint.y)
+		}
+		
+		// disable layer animation and update the
+		//	shape layer's path and y position
+		CATransaction.begin()
+		CATransaction.setDisableActions(true)
+		shapeLayer.path = bez.cgPath
+		CATransaction.commit()
+	}
+/*
 	override func layoutSubviews() {
 		super.layoutSubviews()
 		
@@ -1161,6 +1206,8 @@ class DashedArcView: UIView {
 		shapeLayer.frame.origin.y = yOff
 		CATransaction.commit()
 	}
+*/
+	
 }
 
 class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
@@ -1174,6 +1221,11 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		
+		let sampleStrings: [String] = [
+			"Short string.",
+			"Medium length string that may or may not wrap.",
+			"This is a very long string that will definitely wrap. When running on an iPhone 8 in portrait orientation, it should wrap to three or four lines."
+		]
 		// generate some sample data
 		var thirdLabelLineCounts: [Int] = [
 			6, 2, 4, 3, 2, 1, 3, 4, 4, 5, 4, 3, 1, 5, 6, 7, 8, 5, 4, 3, 5, 28, 28, 2, 28,
@@ -1183,7 +1235,8 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 			var str: MyDataStruct = MyDataStruct()
 			str.first = "Level \(i)"
 			str.second = "Foundation \(i)"
-			str.third = ((1...n).map { "Line \($0)" }).joined(separator: "\n")
+			//str.third = ((1...n).map { "Line \($0)" }).joined(separator: "\n")
+			str.third = sampleStrings[n % sampleStrings.count]
 			myData.append(str)
 		}
 		
@@ -1211,7 +1264,7 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		tableView.register(PieCell.self, forCellReuseIdentifier: "c")
 		tableView.dataSource = self
 		tableView.delegate = self
-		tableView.separatorStyle = .none
+		//tableView.separatorStyle = .none
 		
 		// because the dashed line will extend above the top of the first cell
 		// 	and below the bottom of the last cell
@@ -1229,11 +1282,25 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		super.viewDidAppear(animated)
 		//tableView.scrollToRow(at: IndexPath(row: 90, section: 0), at: .none, animated: true)
 	}
+	var tvWidth: CGFloat = 0
 	override func viewDidLayoutSubviews() {
 		super.viewDidLayoutSubviews()
-//		let c = PieCell()
-//		c.frame.size.width = tableView.frame.width
-//		c.fillData(myData[0], direction: .right)
+		if tvWidth != tableView.frame.width {
+			tvWidth = tableView.frame.width
+			let c = PieCell()
+			//c.frame.size.width = tableView.frame.width
+			var rHeights: [CGFloat] = []
+			myData.forEach { str in
+				c.fillData(str, direction: .right)
+				let sz = c.systemLayoutSizeFitting(CGSize(width: tvWidth, height: 50), withHorizontalFittingPriority: .required, verticalFittingPriority: .defaultLow)
+				rHeights.append(sz.height)
+			}
+			print(rHeights)
+			bkgView.rowHeights = rHeights
+			bkgView.updatePath()
+			bkgView.yOff = -tableView.contentOffset.y
+		}
+		
 //		c.setNeedsLayout()
 //		c.layoutIfNeeded()
 		// this will be called when the frame changes (such as on device rotation)
@@ -1250,35 +1317,42 @@ class PiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		c.fillData(myData[indexPath.row], direction: dir)
 		return c
 	}
+	
+	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+		print(bkgView.shapeLayer.frame, tableView.contentOffset.y)
+	}
+	
 	func scrollViewDidScroll(_ scrollView: UIScrollView) {
-		if let tv = scrollView as? UITableView {
-			if let a = tv.indexPathsForVisibleRows {
-				var needsUpdate: Bool = false
-				// get the current array of heights from bkgView
-				var rHeights: [CGFloat] = bkgView.rowHeights
-				// loop through visible rows
-				a.forEach { pth in
-					if let c = tv.cellForRow(at: pth) {
-						let f = c.frame
-						if pth.row > rHeights.count - 1 {
-							rHeights.append(0.0)
-						}
-						if rHeights[pth.row] != f.size.height {
-							needsUpdate = true
-							rHeights[pth.row] = f.size.height
-						}
-					}
-				}
-				// only tell bkgView to re-generate its path
-				//	if the height of one or more rows has changed
-				if needsUpdate {
-					bkgView.rowHeights = rHeights
-					bkgView.setNeedsLayout()
-				}
-			}
-			// update background view's y-offset
-			bkgView.yOff = -scrollView.contentOffset.y
-		}
+		bkgView.yOff = -scrollView.contentOffset.y
+
+//		if let tv = scrollView as? UITableView {
+//			if let a = tv.indexPathsForVisibleRows {
+//				var needsUpdate: Bool = false
+//				// get the current array of heights from bkgView
+//				var rHeights: [CGFloat] = bkgView.rowHeights
+//				// loop through visible rows
+//				a.forEach { pth in
+//					if let c = tv.cellForRow(at: pth) {
+//						let f = c.frame
+//						if pth.row > rHeights.count - 1 {
+//							rHeights.append(0.0)
+//						}
+//						if rHeights[pth.row] != f.size.height {
+//							needsUpdate = true
+//							rHeights[pth.row] = f.size.height
+//						}
+//					}
+//				}
+//				// only tell bkgView to re-generate its path
+//				//	if the height of one or more rows has changed
+//				if needsUpdate {
+//					bkgView.rowHeights = rHeights
+//					bkgView.setNeedsLayout()
+//				}
+//			}
+//			// update background view's y-offset
+//			bkgView.yOff = -scrollView.contentOffset.y
+//		}
 	}
 }
 
@@ -1525,7 +1599,136 @@ class xPiesVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
 		}
 	}
 }
-class cDashedArcView: UIView {
+*/
+
+class ArcVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		let st = UIStackView()
+		st.axis = .vertical
+		st.spacing = 0
+		st.translatesAutoresizingMaskIntoConstraints = false
+		
+		view.addSubview(st)
+		
+		let g = view.safeAreaLayoutGuide
+		
+		NSLayoutConstraint.activate([
+			st.topAnchor.constraint(equalTo: g.topAnchor, constant: 40),
+			st.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20),
+			st.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20),
+		])
+
+		let hs: [CGFloat] = [
+			80, 80, 120, 160,
+		]
+		let dr: [LayoutDirection] = [
+			.right, .left, .right, .left,
+		]
+		for (h, d) in zip(hs, dr) {
+			let v = MyDashedArcView()
+			v.backgroundColor = .yellow.withAlphaComponent(0.25)
+			v.layoutDirection = d
+			v.heightAnchor.constraint(equalToConstant: h).isActive = true
+			st.addArrangedSubview(v)
+		}
+		
+	}
+	
+}
+
+class SampleTableVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
+	
+	var myData: [MyDataStruct] = []
+	
+	let tableView = UITableView()
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		// generate some sample data
+		let sampleStrings: [String] = [
+			"Short string.",
+			"Medium length string that may or may not wrap.",
+			"This is a very long string that will definitely wrap. When running on an iPhone 8 in portrait orientation, it should wrap to four lines.",
+		]
+		let thirdLabels: [Int] = [
+			0, 1, 0, 1, 0, 1, 2, 0, 1, 2, 1, 2, 2, 2,
+		]
+		var rowNum: Int = 0
+		thirdLabels.forEach { n in
+			var str: MyDataStruct = MyDataStruct()
+			str.first = "Level \(rowNum)"
+			str.second = "Foundation \(rowNum)"
+			str.third = sampleStrings[n % sampleStrings.count]
+			myData.append(str)
+			rowNum += 1
+		}
+		// and some more data, with increasing number of lines for the third label
+		for i in 4...16 {
+			var str: MyDataStruct = MyDataStruct()
+			str.first = "Level \(rowNum)"
+			str.second = "Foundation \(rowNum)"
+			str.third = (1...i).compactMap({"Line \($0)"}).joined(separator: "\n")
+			myData.append(str)
+			rowNum += 1
+		}
+		// and a few rows with extremely long strings
+		let reallyLongString = "UILabel - A label can contain an arbitrary amount of text, but UILabel may shrink, wrap, or truncate the text, depending on the size of the bounding rectangle and properties you set. You can control the font, text color, alignment, highlighting, and shadowing of the text in the label.\n\nUITextField - Displays a rounded rectangle that can contain editable text. When a user taps a text field, a keyboard appears; when a user taps Return in the keyboard, the keyboard disappears and the text field can handle the input in an application-specific way. UITextField supports overlay views to display additional information, such as a bookmarks icon. UITextField also provides a clear text control a user taps to erase the contents of the text field."
+		for _ in 1...5 {
+			var str: MyDataStruct = MyDataStruct()
+			str.first = "Level \(rowNum)"
+			str.second = "Foundation \(rowNum)"
+			str.third = reallyLongString
+			myData.append(str)
+			rowNum += 1
+		}
+		
+		tableView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(tableView)
+		
+		let g = view.safeAreaLayoutGuide
+		
+		NSLayoutConstraint.activate([
+			tableView.topAnchor.constraint(equalTo: g.topAnchor, constant: 0),
+			tableView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 0),
+			tableView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: 0),
+			tableView.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: 0),
+		])
+		
+		tableView.register(MyPieCell.self, forCellReuseIdentifier: "c")
+		tableView.dataSource = self
+		tableView.delegate = self
+		tableView.separatorStyle = .none
+		
+		// because the dashed line will extend above the top of the first cell
+		// 	and below the bottom of the last cell
+		//	we want to add a little "inset padding" on top and bottom of the table view
+		
+		var defaultInset = tableView.contentInset
+		defaultInset.top += 8
+		defaultInset.bottom += 8
+		tableView.contentInset = defaultInset
+		
+		tableView.contentInsetAdjustmentBehavior = .never
+		tableView.contentOffset.y = -8
+	}
+	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+		return myData.count
+	}
+	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+		let c = tableView.dequeueReusableCell(withIdentifier: "c", for: indexPath) as! MyPieCell
+		let dir: LayoutDirection = indexPath.row % 2 == 0 ? .right : .left
+		c.fillData(myData[indexPath.row], direction: dir)
+		return c
+	}
+	
+}
+
+
+class MyDashedArcView: UIView {
 	
 	public var layoutDirection: LayoutDirection = .left {
 		didSet {
@@ -1577,7 +1780,158 @@ class cDashedArcView: UIView {
 		shapeLayer.path = bez.cgPath
 	}
 }
-*/
+
+class MyPieCell: UITableViewCell {
+	
+	private var layoutDirection: LayoutDirection = .right {
+		didSet {
+			
+			// update horizontal constraints to position the pieView and labels stack view
+			
+			let g = contentView
+			
+			pieHorizontalConstraint.isActive = false
+			stackLeadingConstraint.isActive = false
+			stackTrailingConstraint.isActive = false
+			
+			if layoutDirection == .left {
+				// pie is on the left
+				pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -40.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .left
+				}
+			} else {
+				// pie is on the right
+				pieHorizontalConstraint = pieView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -48.0)
+				stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 40.0)
+				stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+				[firstLabel, secondLabel, thirdLabel].forEach { v in
+					v.textAlignment = .right
+				}
+			}
+			
+			pieHorizontalConstraint.isActive = true
+			stackLeadingConstraint.isActive = true
+			stackTrailingConstraint.isActive = true
+			
+		}
+	}
+	
+	func fillData(_ str: MyDataStruct, direction: LayoutDirection) {
+		firstLabel.text = str.first
+		secondLabel.text = str.second
+		thirdLabel.text = str.third
+		layoutDirection = direction
+		arcView.layoutDirection = direction
+	}
+	
+	private let pieView = PieView()
+	private let arcView = MyDashedArcView()
+	
+	private let firstLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 13.0, weight: .regular)
+		return v
+	}()
+	private let secondLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 16.0, weight: .bold)
+		return v
+	}()
+	private let thirdLabel: UILabel = {
+		let v = UILabel()
+		v.font = .systemFont(ofSize: 13.0, weight: .regular)
+		v.numberOfLines = 0
+		return v
+	}()
+	
+	// stack view for the labels
+	private let stack: UIStackView = {
+		let v = UIStackView()
+		v.axis = .vertical
+		v.spacing = 2
+		return v
+	}()
+	
+	private var pieHorizontalConstraint: NSLayoutConstraint!
+	private var stackLeadingConstraint: NSLayoutConstraint!
+	private var stackTrailingConstraint: NSLayoutConstraint!
+	
+	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+		super.init(style: style, reuseIdentifier: reuseIdentifier)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		
+		[firstLabel, secondLabel, thirdLabel].forEach { v in
+			v.setContentCompressionResistancePriority(.required, for: .vertical)
+			stack.addArrangedSubview(v)
+		}
+		[arcView, pieView, stack].forEach { v in
+			v.translatesAutoresizingMaskIntoConstraints = false
+			contentView.addSubview(v)
+		}
+		
+		let g = contentView
+		
+		// initialize the horizontal constraints that we will update
+		//	based on left or right layout
+		pieHorizontalConstraint = pieView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 60.0)
+		stackLeadingConstraint = stack.leadingAnchor.constraint(equalTo: pieView.trailingAnchor, constant: 20.0)
+		stackTrailingConstraint = stack.trailingAnchor.constraint(equalTo: pieView.leadingAnchor, constant: -20.0)
+		
+		// giving avoid auto-layout complaints
+		// 	pieView is square (1:1 ratio)
+		
+		// pieView width constant
+		pieView.widthAnchor.constraint(equalToConstant: 60.0).isActive = true
+		
+		let pieHeightConstraint = pieView.heightAnchor.constraint(equalTo: pieView.widthAnchor)
+		pieHeightConstraint.priority = .required - 1
+		pieHeightConstraint.isActive = true
+		
+		NSLayoutConstraint.activate([
+			
+			// constrain arcView to all 4 sides
+			arcView.topAnchor.constraint(equalTo: g.topAnchor),
+			arcView.leadingAnchor.constraint(equalTo: g.leadingAnchor),
+			arcView.trailingAnchor.constraint(equalTo: g.trailingAnchor),
+			arcView.bottomAnchor.constraint(equalTo: g.bottomAnchor),
+
+			// center the pieView vertically
+			pieView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			
+			// we want at least 12-points above and below the pieView
+			pieView.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			pieView.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
+			
+			// center the labels stack view vertically
+			stack.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			
+			// we want at least 12-points above and below the stack view
+			stack.topAnchor.constraint(greaterThanOrEqualTo: g.topAnchor, constant: 12.0),
+			stack.bottomAnchor.constraint(lessThanOrEqualTo: g.bottomAnchor, constant: -12.0),
+			
+		])
+		
+		// we need to see the table view's background view through the cells
+		contentView.backgroundColor = .clear
+		self.backgroundColor = .clear
+		
+		// during development, if we want to see the framing
+		//pieView.backgroundColor = .green
+		//stack.backgroundColor = .yellow
+	}
+	
+}
+
+
 
 
 class TVTestVC: UIViewController {
