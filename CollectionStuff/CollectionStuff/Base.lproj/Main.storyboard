@@ -367,10 +367,10 @@
             </objects>
             <point key="canvasLocation" x="138.75" y="67.5"/>
         </scene>
-        <!--Misc View Controller-->
+        <!--Circle TestVC-->
         <scene sceneID="zGa-6A-dnH">
             <objects>
-                <viewController id="Fge-M8-1Iw" customClass="MiscViewController" customModule="CollectionStuff" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="Fge-M8-1Iw" customClass="CircleTestVC" customModule="CollectionStuff" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="tPW-qG-f1R">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
