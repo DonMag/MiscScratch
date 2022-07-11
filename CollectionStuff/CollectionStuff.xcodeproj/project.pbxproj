@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FC1D50AE287B022000E18AB7 /* MiscViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC1D50AD287B022000E18AB7 /* MiscViewController.swift */; };
 		FC5724232868941D00E5136A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5724222868941D00E5136A /* AppDelegate.swift */; };
 		FC5724252868941D00E5136A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5724242868941D00E5136A /* SceneDelegate.swift */; };
 		FC5724272868941D00E5136A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC5724262868941D00E5136A /* ViewController.swift */; };
@@ -20,6 +21,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		FC1D50AD287B022000E18AB7 /* MiscViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiscViewController.swift; sourceTree = "<group>"; };
 		FC57241F2868941D00E5136A /* CollectionStuff.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CollectionStuff.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC5724222868941D00E5136A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FC5724242868941D00E5136A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				FC572489286DE98400E5136A /* Tables.storyboard */,
 				FC57248B286DF4B200E5136A /* Tmp.storyboard */,
 				FC57248D2871CBD900E5136A /* Numpad.xib */,
+				FC1D50AD287B022000E18AB7 /* MiscViewController.swift */,
 				FC57242B2868941F00E5136A /* Assets.xcassets */,
 				FC57242D2868941F00E5136A /* LaunchScreen.storyboard */,
 				FC5724302868941F00E5136A /* Info.plist */,
@@ -157,6 +160,7 @@
 				FC5724232868941D00E5136A /* AppDelegate.swift in Sources */,
 				FC5724252868941D00E5136A /* SceneDelegate.swift in Sources */,
 				FC572437286B20D000E5136A /* TabsLayout.swift in Sources */,
+				FC1D50AE287B022000E18AB7 /* MiscViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
