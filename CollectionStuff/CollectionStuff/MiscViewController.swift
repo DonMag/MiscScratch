@@ -384,3 +384,321 @@ extension FloatingPoint {
 	var degreesToRadians: Self { self * .pi / 180 }
 	var radiansToDegrees: Self { self * 180 / .pi }
 }
+
+class ShadowView: UIView {
+
+	public var overlapShadow: Bool = true
+	
+	private let redLayer = CAShapeLayer()
+	private let greenLayer = CAShapeLayer()
+	private let blueLayer = CAShapeLayer()
+	
+	private let blueShadowLayer = CAShapeLayer()
+
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		let clrs: [UIColor] = [
+			.clear, .red, .green, .blue,
+		]
+		let lays: [CAShapeLayer] = [
+			blueShadowLayer, redLayer, greenLayer, blueLayer,
+		]
+		for (l, c) in zip(lays, clrs) {
+			l.fillColor = c.cgColor
+			layer.addSublayer(l)
+		}
+	}
+	
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let rd = bounds.width * 0.20
+
+		let redRect: CGRect = CGRect(x: rd * 0.5, y: rd * 0.5, width: rd * 2.0, height: rd * 2.0)
+		let greenRect: CGRect = redRect.offsetBy(dx: rd, dy: rd)
+		let blueRect: CGRect = greenRect.offsetBy(dx: rd, dy: rd)
+		
+		let redBez: UIBezierPath = UIBezierPath(ovalIn: redRect)
+		let greenBez: UIBezierPath = UIBezierPath(ovalIn: greenRect)
+		let blueBez: UIBezierPath = UIBezierPath(ovalIn: blueRect)
+
+		redLayer.path = redBez.cgPath
+		greenLayer.path = greenBez.cgPath
+		blueLayer.path = blueBez.cgPath
+
+		redLayer.shadowColor = UIColor.black.cgColor
+		redLayer.shadowRadius = 10
+		redLayer.shadowOpacity = 1
+		redLayer.shadowOffset = .zero
+		redLayer.shadowPath = redBez.cgPath
+
+		// no shadow on greenLayer
+
+		if overlapShadow {
+			blueLayer.shadowColor = UIColor.black.cgColor
+			blueLayer.shadowRadius = 10
+			blueLayer.shadowOpacity = 1
+			blueLayer.shadowOffset = .zero
+			blueLayer.shadowPath = blueBez.cgPath
+		} else {
+			blueShadowLayer.shadowColor = UIColor.black.cgColor
+			blueShadowLayer.shadowRadius = 10
+			blueShadowLayer.shadowOpacity = 1
+			blueShadowLayer.shadowOffset = .zero
+			blueShadowLayer.shadowPath = blueBez.cgPath
+		}
+		
+	}
+	
+}
+
+class xShadowTestVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+
+		let stackView = UIStackView()
+		stackView.axis = .vertical
+		
+		let sView1 = ShadowView()
+		let sView2 = ShadowView()
+		
+		stackView.addArrangedSubview(sView1)
+		stackView.addArrangedSubview(sView2)
+		
+		stackView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(stackView)
+		
+		let g = view.safeAreaLayoutGuide
+		NSLayoutConstraint.activate([
+			stackView.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+			stackView.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+			
+			sView1.widthAnchor.constraint(equalToConstant: 300.0),
+			sView1.heightAnchor.constraint(equalTo: sView1.widthAnchor),
+			
+			sView2.widthAnchor.constraint(equalTo: sView1.widthAnchor),
+			sView2.heightAnchor.constraint(equalTo: sView1.widthAnchor),
+		])
+		
+		sView1.overlapShadow = true
+		sView2.overlapShadow = false
+		
+	}
+}
+
+class DemoShadowView: UIView {
+	public var v: Int = 0
+	public var s: Bool = false
+	public var overlapShadow: Bool = true
+	
+	private let redLayer = CAShapeLayer()
+	private let greenLayer = CAShapeLayer()
+	private let blueLayer = CAShapeLayer()
+	
+	private let blueShadowLayer = CAShapeLayer()
+	
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		layer.addSublayer(blueShadowLayer)
+		let clrs: [UIColor] = [
+			.blue, .red, .green, .blue,
+		]
+		let lays: [CAShapeLayer] = [
+			blueShadowLayer, redLayer, greenLayer, blueLayer,
+		]
+		for (l, c) in zip(lays, clrs) {
+			l.fillColor = c.cgColor
+			layer.addSublayer(l)
+		}
+	}
+	
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let rd = bounds.width * 0.20
+		
+		let redRect: CGRect = CGRect(x: rd * 0.5, y: rd * 0.5, width: rd * 2.0, height: rd * 2.0)
+		let greenRect: CGRect = redRect.offsetBy(dx: rd, dy: rd)
+		let blueRect: CGRect = greenRect.offsetBy(dx: rd, dy: rd)
+		
+		let redBez: UIBezierPath = UIBezierPath(ovalIn: redRect)
+		let greenBez: UIBezierPath = UIBezierPath(ovalIn: greenRect)
+		let blueBez: UIBezierPath = UIBezierPath(ovalIn: blueRect)
+		
+		switch v {
+		case 0:
+			redLayer.path = redBez.cgPath
+			if s {
+				redLayer.shadowColor = UIColor.black.cgColor
+				redLayer.shadowRadius = 10
+				redLayer.shadowOpacity = 1
+				redLayer.shadowOffset = .zero
+				redLayer.shadowPath = redBez.cgPath
+			}
+			()
+		case 1:
+			greenLayer.path = greenBez.cgPath
+			()
+		case 2:
+			blueLayer.path = blueBez.cgPath
+			if s {
+				blueLayer.shadowColor = UIColor.black.cgColor
+				blueLayer.shadowRadius = 10
+				blueLayer.shadowOpacity = 1
+				blueLayer.shadowOffset = .zero
+				blueLayer.shadowPath = blueBez.cgPath
+			}
+			()
+		case 3:
+//			blueShadowLayer.isHidden = true
+//			layer.shadowColor = UIColor.black.cgColor
+//			layer.shadowRadius = 10
+//			layer.shadowOpacity = 1
+//			layer.shadowOffset = .zero
+//			layer.shadowPath = blueBez.cgPath
+			blueShadowLayer.path = blueBez.cgPath
+			if s {
+				blueShadowLayer.shadowColor = UIColor.black.cgColor
+				blueShadowLayer.shadowRadius = 10
+				blueShadowLayer.shadowOpacity = 1
+				blueShadowLayer.shadowOffset = .zero
+				blueShadowLayer.shadowPath = blueBez.cgPath
+			}
+			()
+		default:
+			()
+		}
+		
+	}
+	
+}
+
+
+class yShadowTestVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		let sView1 = DemoShadowView()
+		let sView2 = DemoShadowView()
+		let sView3 = DemoShadowView()
+		let sView4 = DemoShadowView()
+
+		let g = view.safeAreaLayoutGuide
+
+		let vals: [Int] = [3, 0, 1, 2]
+		let vs: [DemoShadowView] = [sView1, sView2, sView3, sView4]
+		for (i, v) in zip(vals, vs) {
+			v.translatesAutoresizingMaskIntoConstraints = false
+			view.addSubview(v)
+			NSLayoutConstraint.activate([
+				v.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+				v.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+				v.widthAnchor.constraint(equalToConstant: 300.0),
+				v.heightAnchor.constraint(equalTo: v.widthAnchor),
+			])
+			v.v = i
+		}
+		
+		//sView2.s = true
+		
+		sView1.isHidden = false
+		//sView1.s = true
+
+		sView4.s = sView1.isHidden
+		
+	}
+}
+
+class ShadowTestVC: UIViewController {
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		let sView1 = DemoShadowViewA()
+		
+		let g = view.safeAreaLayoutGuide
+
+		let v = sView1
+		
+			v.translatesAutoresizingMaskIntoConstraints = false
+			view.addSubview(v)
+			NSLayoutConstraint.activate([
+				v.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+				v.centerYAnchor.constraint(equalTo: g.centerYAnchor),
+				v.widthAnchor.constraint(equalToConstant: 300.0),
+				v.heightAnchor.constraint(equalTo: v.widthAnchor),
+			])
+		
+		v.layer.shadowColor = UIColor.black.cgColor
+		v.layer.shadowRadius = 10
+		v.layer.shadowOpacity = 1
+		v.layer.shadowOffset = CGSize(width: 12, height: 12)
+
+		v.backgroundColor = .systemYellow
+	}
+}
+
+class DemoShadowViewA: UIView {
+	public var v: Int = 0
+	public var s: Bool = false
+	public var overlapShadow: Bool = true
+	
+	private let redLayer = CAShapeLayer()
+	private let greenLayer = CAShapeLayer()
+	
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		commonInit()
+	}
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		commonInit()
+	}
+	private func commonInit() {
+		let clrs: [UIColor] = [
+			.green, .green,
+		]
+		let lays: [CAShapeLayer] = [
+			redLayer, greenLayer,
+		]
+		for (l, c) in zip(lays, clrs) {
+			layer.addSublayer(l)
+		}
+		redLayer.fillColor = UIColor.green.cgColor
+		greenLayer.fillColor = UIColor.clear.cgColor
+		greenLayer.strokeColor = UIColor.green.cgColor
+		greenLayer.lineWidth = 8
+	}
+	
+	override func layoutSubviews() {
+		super.layoutSubviews()
+		
+		let rd = bounds.width * 0.15
+		
+		let redRect: CGRect = CGRect(x: rd * 0.5, y: rd * 0.5, width: rd * 2.0, height: rd * 2.0)
+		let greenRect: CGRect = redRect.offsetBy(dx: rd * 2.5, dy: 0)
+		
+		let redBez: UIBezierPath = UIBezierPath(ovalIn: redRect)
+		let greenBez: UIBezierPath = UIBezierPath(ovalIn: greenRect)
+		
+		redLayer.path = redBez.cgPath
+		greenLayer.path = greenBez.cgPath
+	}
+	
+}
