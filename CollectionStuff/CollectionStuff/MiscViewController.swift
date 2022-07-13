@@ -702,3 +702,276 @@ class DemoShadowViewA: UIView {
 	}
 	
 }
+
+class ButtonFontScaleVC: UIViewController {
+	var b1: UIButton = {
+		let b = UIButton()
+		return b
+	}()
+	var b2: UIButton = {
+		let b = UIButton()
+		return b
+	}()
+
+	override func viewDidLoad() {
+		super.viewDidLoad()
+	
+		let titles: [String] = [
+			"Pay by major credit card", "Pay in cash"
+		]
+		let btns: [UIButton] = [
+			b1, b2
+		]
+		
+		let stackView = UIStackView()
+		stackView.spacing = 8
+		stackView.distribution = .fillEqually
+		
+		for (b, s) in zip(btns, titles) {
+			b.setTitle(s, for: [])
+			b.setTitleColor(.white, for: .normal)
+			b.layer.cornerRadius = 8
+			b.backgroundColor = .red
+			stackView.addArrangedSubview(b)
+		}
+		
+		stackView.translatesAutoresizingMaskIntoConstraints = false
+		view.addSubview(stackView)
+		
+		let g = view.safeAreaLayoutGuide
+		NSLayoutConstraint.activate([
+			stackView.topAnchor.constraint(equalTo: g.topAnchor, constant: 20.0),
+			stackView.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20.0),
+			stackView.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20.0),
+		])
+	}
+
+	var b1W: CGFloat = -1
+	
+	override func viewDidLayoutSubviews() {
+		super.viewDidLayoutSubviews()
+
+		if b1W != b1.frame.width {
+			print("b1W:", b1W)
+			b1W = b1.frame.width
+			if b1W < 1.0 {
+				view.setNeedsLayout()
+				return
+			}
+			print("b1W:", b1W)
+
+			var titles: [String] = []
+			titles.append(b1.currentTitle ?? "A")
+			titles.append(b2.currentTitle ?? "B")
+			
+			guard let oldF: UIFont = UIFont(name: "Times", size: 24) else {
+				return
+			}
+			
+			let f: UIFont = fontSizeThatFits(font: oldF, strings: titles, maxW: b1.frame.width - 16.0, maxPS: 24, minPS: 4)
+			
+			b1.titleLabel?.font = f
+			b2.titleLabel?.font = f
+
+		}
+		return()
+		
+		if b1W != b1.frame.width {
+			b1W = b1.frame.width
+			if b1W < 1.0 {
+				view.setNeedsLayout()
+				return
+			}
+
+			let titles: [String] = [
+				"Pay in cash", "Pay by credit card", "Pay in cash"
+			]
+			let f: UIFont = fontSizeThatFits(font: .systemFont(ofSize: 24), strings: titles, maxW: b1.frame.width - 16.0, maxPS: 24, minPS: 8)
+
+			b1.titleLabel?.font = f
+			b2.titleLabel?.font = f
+
+			
+//			if let t = b1.currentTitle
+//			{
+//				var pS: CGFloat = 32
+//				var newF: UIFont = .systemFont(ofSize: pS)
+//				var w = t.width(withConstrainedHeight: b1.frame.height, font: newF)
+//				while w > b1.frame.width {
+//					pS -= 1
+//					newF = .systemFont(ofSize: pS)
+//					w = t.width(withConstrainedHeight: b1.frame.height, font: newF)
+//				}
+//				print(w, pS)
+//				b1.titleLabel?.font = newF
+//				b2.titleLabel?.font = newF
+//			}
+		}
+
+	}
+	
+	func fontSizeThatFits(font: UIFont, strings: [String], maxW: CGFloat, maxPS: CGFloat, minPS: CGFloat) -> UIFont {
+		
+		var curPS: CGFloat = maxPS
+
+		var newF: UIFont = UIFont(descriptor: font.fontDescriptor, size: curPS)
+		var w: CGFloat = 0
+		var minW: CGFloat = maxW
+		
+		strings.forEach { s in
+			w = s.width(withConstrainedHeight: curPS + 2.0, font: newF)
+			while w > minW && curPS > minPS {
+				curPS -= 1.0
+				newF = UIFont(descriptor: font.fontDescriptor, size: curPS)
+				w = s.width(withConstrainedHeight: curPS + 2.0, font: newF)
+			}
+			minW = min(minW, w)
+		}
+		
+		return newF
+		
+	}
+	
+}
+
+extension NSAttributedString {
+	func height(withConstrainedWidth width: CGFloat) -> CGFloat {
+		let constraintRect = CGSize(width: width, height: .greatestFiniteMagnitude)
+		let boundingBox = boundingRect(with: constraintRect, options: .usesLineFragmentOrigin, context: nil)
+		
+		return ceil(boundingBox.height)
+	}
+	
+	func width(withConstrainedHeight height: CGFloat) -> CGFloat {
+		let constraintRect = CGSize(width: .greatestFiniteMagnitude, height: height)
+		let boundingBox = boundingRect(with: constraintRect, options: .usesLineFragmentOrigin, context: nil)
+		
+		return ceil(boundingBox.width)
+	}
+}
+
+extension String {
+	func height(withConstrainedWidth width: CGFloat, font: UIFont) -> CGFloat {
+		let constraintRect = CGSize(width: width, height: .greatestFiniteMagnitude)
+		let boundingBox = self.boundingRect(with: constraintRect, options: .usesLineFragmentOrigin, attributes: [.font: font], context: nil)
+		
+		return ceil(boundingBox.height)
+	}
+	
+	func width(withConstrainedHeight height: CGFloat, font: UIFont) -> CGFloat {
+		let constraintRect = CGSize(width: .greatestFiniteMagnitude, height: height)
+		let boundingBox = self.boundingRect(with: constraintRect, options: .usesLineFragmentOrigin, attributes: [.font: font], context: nil)
+		
+		return ceil(boundingBox.width)
+	}
+}
+
+
+class PixelVC: UIViewController {
+	@IBOutlet var iv1: UIImageView!
+	@IBOutlet var iv2: UIImageView!
+
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		
+		guard let image = UIImage(named: "pixelTest") else { return }
+		let modifiedImage = setColor(color: .red, onImage: image, atPoint: CGPoint(x: 5, y: 5))
+		
+	}
+	
+	func setColor(color: UIColor, onImage: UIImage, atPoint: CGPoint) -> UIImage {
+		let rndr = UIGraphicsImageRenderer(size: onImage.size)
+		let newImg = rndr.image { ctx in
+			onImage.draw(at: .zero)
+			let r = CGRect(origin: atPoint, size: CGSize(width: 1, height: 1))
+			ctx.cgContext.setFillColor(color.cgColor)
+			ctx.cgContext.addRect(r)
+			ctx.cgContext.drawPath(using: .fill)
+		}
+		return newImg
+	}
+
+	func processPixels(in image: UIImage) -> UIImage? {
+		guard let inputCGImage = image.cgImage else {
+			print("unable to get cgImage")
+			return nil
+		}
+		let colorSpace       = CGColorSpaceCreateDeviceRGB()
+		let width            = inputCGImage.width
+		let height           = inputCGImage.height
+		let bytesPerPixel    = 4
+		let bitsPerComponent = 8
+		let bytesPerRow      = bytesPerPixel * width
+		let bitmapInfo       = RGBA32.bitmapInfo
+		
+		guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: bitsPerComponent, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo) else {
+			print("unable to create context")
+			return nil
+		}
+		context.draw(inputCGImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+		
+		guard let buffer = context.data else {
+			print("unable to get context data")
+			return nil
+		}
+		
+		let pixelBuffer = buffer.bindMemory(to: RGBA32.self, capacity: width * height)
+		
+		for row in 0 ..< Int(height) {
+			for column in 0 ..< Int(width) {
+				let offset = row * width + column
+				if pixelBuffer[offset] == .yellow {
+					pixelBuffer[offset] = .red
+				}
+			}
+		}
+		
+		let outputCGImage = context.makeImage()!
+		let outputImage = UIImage(cgImage: outputCGImage, scale: image.scale, orientation: image.imageOrientation)
+		
+		return outputImage
+	}
+	
+	struct RGBA32: Equatable {
+		private var color: UInt32
+		
+		var redComponent: UInt8 {
+			return UInt8((color >> 24) & 255)
+		}
+		
+		var greenComponent: UInt8 {
+			return UInt8((color >> 16) & 255)
+		}
+		
+		var blueComponent: UInt8 {
+			return UInt8((color >> 8) & 255)
+		}
+		
+		var alphaComponent: UInt8 {
+			return UInt8((color >> 0) & 255)
+		}
+		
+		init(red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) {
+			let red   = UInt32(red)
+			let green = UInt32(green)
+			let blue  = UInt32(blue)
+			let alpha = UInt32(alpha)
+			color = (red << 24) | (green << 16) | (blue << 8) | (alpha << 0)
+		}
+		
+		static let red     = RGBA32(red: 255, green: 0,   blue: 0,   alpha: 255)
+		static let green   = RGBA32(red: 0,   green: 255, blue: 0,   alpha: 255)
+		static let blue    = RGBA32(red: 0,   green: 0,   blue: 255, alpha: 255)
+		static let white   = RGBA32(red: 255, green: 255, blue: 255, alpha: 255)
+		static let black   = RGBA32(red: 0,   green: 0,   blue: 0,   alpha: 255)
+		static let magenta = RGBA32(red: 255, green: 0,   blue: 255, alpha: 255)
+		static let yellow  = RGBA32(red: 255, green: 255, blue: 0,   alpha: 255)
+		static let cyan    = RGBA32(red: 0,   green: 255, blue: 255, alpha: 255)
+		
+		static let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+		
+		static func ==(lhs: RGBA32, rhs: RGBA32) -> Bool {
+			return lhs.color == rhs.color
+		}
+	}
+}
